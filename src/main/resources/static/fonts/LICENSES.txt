@@ -1,0 +1,12 @@
+Fontes do tema do Swagger UI (arquivos .woff2, subconjunto latino, vindos do Google Fonts)
+============================================================================================
+Todas são software livre e podem ser distribuídas junto com o projeto.
+O texto completo de cada licença está na pasta licenses/.
+
+Metal Mania             SIL Open Font License 1.1   (c) 2012 Open Window
+Pirata One              SIL Open Font License 1.1   (c) 2012 Rodrigo Fuenzalida, Nicolas Massi
+Libre Caslon Condensed  SIL Open Font License 1.1   (c) 2023 The Libre Caslon Condensed Project Authors
+Archivo                 SIL Open Font License 1.1   (c) 2020 The Archivo Project Authors
+Courier Prime           SIL Open Font License 1.1   (c) 2015 The Courier Prime Project Authors
+Special Elite           Apache License 2.0
+Rock Salt               Apache License 2.0
