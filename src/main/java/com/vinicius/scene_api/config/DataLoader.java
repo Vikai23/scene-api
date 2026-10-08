@@ -24,7 +24,7 @@ import java.util.Map;
 
 /**
  * Popula o banco H2 (em memória) ao subir a aplicação, com artistas e álbuns de uma biblioteca real do Last.fm.
- * As faixas são passadas como "título|m:ss"; sem duração (ainda não divulgada) basta deixar depois da barra vazio.
+ * As faixas são passadas como "título|m:ss"; quando a duração não é conhecida, basta deixar vazio o que vem depois da barra.
  */
 @Component
 public class DataLoader implements CommandLineRunner {
@@ -126,9 +126,9 @@ public class DataLoader implements CommandLineRunner {
                 "The Third Temptation of Paris|3:42", "A Siren's Soliloquy|4:00", "Nero's Decay|4:26",
                 "Early Mourning|3:46", "Apology (acoustic)|3:59");
 
-        album(iPromisedTheWorld, "Fear of the Fall", 2025, AlbumType.ALBUM, null,
-                "01|", "On a Broken Edge|", "Tears on the Moon|", "02|", "Weather to Believe|",
-                "Don't Just Stand There|", "I Hold On Twice|", "At Least, Be Human|");
+        album(iPromisedTheWorld, "Fear of the Fall", 2024, AlbumType.ALBUM, null,
+                "01|2:12", "On a Broken Edge|3:00", "Tears on the Moon|2:59", "02|2:58", "Weather to Believe|4:02",
+                "Don't Just Stand There|4:05", "I Hold On Twice|3:40", "At Least, Be Human|3:12");
 
         // EP sem faixas cadastradas ainda: serve para testar a consulta por tipo de álbum.
         album(iPromisedTheWorld, "I Promised the World", 2026, AlbumType.EP, null);
