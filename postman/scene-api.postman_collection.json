@@ -1,0 +1,3865 @@
+{
+	"info": {
+		"_postman_id": "05809ea7-cd3c-5032-ba30-51bce515b93d",
+		"name": "scene-api",
+		"description": "Coleção da Scene API (Spring Boot). Rode com a aplicação em localhost:8080. Ordem sugerida: pastas 1 a 7, de cima para baixo (cada pasta guarda ids que a seguinte usa). As requisições \"ERRO\" mostram 400, 404, 405, 409 e 415.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Artists",
+			"description": "Artistas (CRUD, busca por nome e por gênero). O 'Create an artist' guarda o id em artistId, usado pelas pastas seguintes.",
+			"item": [
+				{
+					"name": "Get all artists",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Paginação respeitada (size=10)', function () {",
+									"  pm.expect(pm.response.json().page.size).to.eql(10);",
+									"});",
+									"pm.test('Itens em _embedded.artists', function () {",
+									"  pm.expect(pm.response.json()._embedded.artists).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists?page=0&size=10&sort=name,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "name,asc"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search artists by name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Itens em _embedded.artists', function () {",
+									"  pm.expect(pm.response.json()._embedded.artists).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/search?name=bring&page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"search"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "bring"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Consulta personalizada: o nome contém o texto, sem diferenciar maiúsculas de minúsculas."
+					}
+				},
+				{
+					"name": "Get artists by genre",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Itens em _embedded.artists', function () {",
+									"  pm.expect(pm.response.json()._embedded.artists).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/by-genre/METALCORE?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"by-genre",
+								"METALCORE"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Consulta personalizada por gênero (enum Genre)."
+					}
+				},
+				{
+					"name": "Create an artist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+									"pm.test('Header Location aponta para o novo recurso', function () {",
+									"  pm.expect(pm.response.headers.get('Location')).to.include('/artists/');",
+									"});",
+									"pm.test('Links HATEOAS: self, update, delete, albums, profile', function () {",
+									"  const l = pm.response.json()._links;",
+									"  pm.expect(l).to.have.property('self');",
+									"  pm.expect(l).to.have.property('update');",
+									"  pm.expect(l).to.have.property('delete');",
+									"  pm.expect(l).to.have.property('albums');",
+									"  pm.expect(l).to.have.property('profile');",
+									"});",
+									"if (pm.response.code === 201) { pm.collectionVariables.set('artistId', pm.response.json().id); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Sleeping with Sirens\",\n  \"genre\": \"POST_HARDCORE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Guarda o id criado na variável artistId. Só os campos obrigatórios; o PUT seguinte completa país e ano."
+					}
+				},
+				{
+					"name": "Get a specific artist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Nome do artista criado', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.name).to.eql('Sleeping with Sirens');",
+									"});",
+									"pm.test('Links HATEOAS: self, albums, profile', function () {",
+									"  const l = pm.response.json()._links;",
+									"  pm.expect(l).to.have.property('self');",
+									"  pm.expect(l).to.have.property('albums');",
+									"  pm.expect(l).to.have.property('profile');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/{{artistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"{{artistId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update an artist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('País atualizado', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.country).to.eql('United States');",
+									"});",
+									"pm.test('Ano de formação atualizado', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.formedYear).to.eql(2009);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists/{{artistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"{{artistId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Sleeping with Sirens\",\n  \"genre\": \"POST_HARDCORE\",\n  \"country\": \"United States\",\n  \"formedYear\": 2009\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - id não numérico",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"  pm.expect(j.message).to.include('\\'id\\'');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/abc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"abc"
+							]
+						},
+						"description": "Letras onde se espera um número: 400, nunca 500."
+					}
+				},
+				{
+					"name": "ERRO 404 - artista inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/999999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"999999"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - nome curto e gênero ausente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"  pm.expect(j.details.length).to.be.at.least(2);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"A\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "O corpo do erro lista cada campo com problema em details."
+					}
+				},
+				{
+					"name": "ERRO 400 - gênero inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Banda Teste\",\n  \"genre\": \"FUNK\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - ano com letras",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Banda Teste\",\n  \"genre\": \"ROCK\",\n  \"formedYear\": \"abc\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - busca sem texto",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/search?name=",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"search"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": ""
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 409 - nome duplicado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 409 Conflict', function () { pm.response.to.have.status(409); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(409);",
+									"  pm.expect(j.error).to.eql('Conflict');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Sleeping with Sirens\",\n  \"genre\": \"POST_HARDCORE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Artist Profiles",
+			"description": "Perfis de artista (relação 1:1 com o artista criado na pasta 1). O 'Create a profile' guarda o id em profileId.",
+			"item": [
+				{
+					"name": "Get all artist profiles",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Paginação respeitada (size=10)', function () {",
+									"  pm.expect(pm.response.json().page.size).to.eql(10);",
+									"});",
+									"pm.test('Itens em _embedded.artistProfiles', function () {",
+									"  pm.expect(pm.response.json()._embedded.artistProfiles).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles?page=0&size=10&sort=hometown,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "hometown,asc"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search artist profiles by hometown",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Itens em _embedded.artistProfiles', function () {",
+									"  pm.expect(pm.response.json()._embedded.artistProfiles).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles/search?hometown=england&page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles",
+								"search"
+							],
+							"query": [
+								{
+									"key": "hometown",
+									"value": "england"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Consulta personalizada: a cidade natal contém o texto, sem diferenciar maiúsculas de minúsculas."
+					}
+				},
+				{
+					"name": "ERRO 404 - artista ainda sem perfil",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles/by-artist/{{artistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles",
+								"by-artist",
+								"{{artistId}}"
+							]
+						},
+						"description": "O artista da pasta 1 ainda não tem perfil: 404 na consulta 1:1."
+					}
+				},
+				{
+					"name": "Create an artist profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+									"pm.test('Header Location aponta para o novo recurso', function () {",
+									"  pm.expect(pm.response.headers.get('Location')).to.include('/artist-profiles/');",
+									"});",
+									"pm.test('Links HATEOAS: self, update, delete, artist', function () {",
+									"  const l = pm.response.json()._links;",
+									"  pm.expect(l).to.have.property('self');",
+									"  pm.expect(l).to.have.property('update');",
+									"  pm.expect(l).to.have.property('delete');",
+									"  pm.expect(l).to.have.property('artist');",
+									"});",
+									"if (pm.response.code === 201) { pm.collectionVariables.set('profileId', pm.response.json().id); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"artistId\": {{artistId}},\n  \"biography\": \"Banda de Orlando, Flórida, formada em 2009.\",\n  \"hometown\": \"Orlando, Florida\",\n  \"website\": \"https://www.example.com\",\n  \"instagram\": \"sws.example\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Guarda o id criado na variável profileId."
+					}
+				},
+				{
+					"name": "Get a specific artist profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Cidade natal', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.hometown).to.eql('Orlando, Florida');",
+									"});",
+									"pm.test('Links HATEOAS: self, artist', function () {",
+									"  const l = pm.response.json()._links;",
+									"  pm.expect(l).to.have.property('self');",
+									"  pm.expect(l).to.have.property('artist');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles/{{profileId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles",
+								"{{profileId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get the profile of an artist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Nome do artista dono do perfil', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.artistName).to.eql('Sleeping with Sirens');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles/by-artist/{{artistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles",
+								"by-artist",
+								"{{artistId}}"
+							]
+						},
+						"description": "Consulta personalizada 1:1: perfil do artista informado."
+					}
+				},
+				{
+					"name": "Update an artist profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Site atualizado', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.website).to.eql('https://www.example.org');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles/{{profileId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles",
+								"{{profileId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"artistId\": {{artistId}},\n  \"biography\": \"Banda de Orlando, Flórida, formada em 2009. Mistura post-hardcore e vocais agudos.\",\n  \"hometown\": \"Orlando, Florida\",\n  \"website\": \"https://www.example.org\",\n  \"instagram\": \"sws.example\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 404 - perfil inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles/999999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles",
+								"999999"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 404 - artista inexistente ao criar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"artistId\": 999999,\n  \"biography\": \"Biografia de um artista que não existe.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - dados inválidos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"  pm.expect(j.details.length).to.be.at.least(3);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"artistId\": {{artistId}},\n  \"biography\": \"curta\",\n  \"hometown\": \"Orlando 123\",\n  \"website\": \"ftp://site\",\n  \"instagram\": \"@com espaço\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Biografia curta, cidade com números, site sem http/https e Instagram inválido."
+					}
+				},
+				{
+					"name": "ERRO 400 - trocar o artista do perfil",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"  pm.expect(j.message).to.include('não pode ser alterado');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles/{{profileId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles",
+								"{{profileId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"artistId\": 1,\n  \"biography\": \"Tentando passar o perfil para outro artista.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 409 - artista já tem perfil",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 409 Conflict', function () { pm.response.to.have.status(409); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(409);",
+									"  pm.expect(j.error).to.eql('Conflict');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"artistId\": {{artistId}},\n  \"biography\": \"Segundo perfil para o mesmo artista.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Albums",
+			"description": "Álbuns (relação 1:N com o artista da pasta 1). O 'Create an album' guarda o id em albumId.",
+			"item": [
+				{
+					"name": "Get all albums",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Paginação respeitada (size=10)', function () {",
+									"  pm.expect(pm.response.json().page.size).to.eql(10);",
+									"});",
+									"pm.test('Itens em _embedded.albums', function () {",
+									"  pm.expect(pm.response.json()._embedded.albums).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/albums?page=0&size=10&sort=releaseYear,desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "releaseYear,desc"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search albums by title",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Itens em _embedded.albums', function () {",
+									"  pm.expect(pm.response.json()._embedded.albums).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/albums/search?title=scream&page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums",
+								"search"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "scream"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Consulta personalizada: o título contém o texto, sem diferenciar maiúsculas de minúsculas."
+					}
+				},
+				{
+					"name": "Get albums by type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Itens em _embedded.albums', function () {",
+									"  pm.expect(pm.response.json()._embedded.albums).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/albums/by-type/EP?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums",
+								"by-type",
+								"EP"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Consulta personalizada por formato (enum AlbumType)."
+					}
+				},
+				{
+					"name": "Create an album",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+									"pm.test('Header Location aponta para o novo recurso', function () {",
+									"  pm.expect(pm.response.headers.get('Location')).to.include('/albums/');",
+									"});",
+									"pm.test('Links HATEOAS: self, update, delete, artist, tracks', function () {",
+									"  const l = pm.response.json()._links;",
+									"  pm.expect(l).to.have.property('self');",
+									"  pm.expect(l).to.have.property('update');",
+									"  pm.expect(l).to.have.property('delete');",
+									"  pm.expect(l).to.have.property('artist');",
+									"  pm.expect(l).to.have.property('tracks');",
+									"});",
+									"if (pm.response.code === 201) { pm.collectionVariables.set('albumId', pm.response.json().id); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/albums",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"artistId\": {{artistId}},\n  \"title\": \"With Ears to See and Eyes to Hear\",\n  \"releaseYear\": 2010,\n  \"type\": \"ALBUM\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Guarda o id criado na variável albumId. A gravadora (opcional) entra no PUT seguinte."
+					}
+				},
+				{
+					"name": "Get a specific album",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Ano de lançamento', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.releaseYear).to.eql(2010);",
+									"});",
+									"pm.test('Nome do artista dono do álbum', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.artistName).to.eql('Sleeping with Sirens');",
+									"});",
+									"pm.test('Links HATEOAS: self, artist, tracks', function () {",
+									"  const l = pm.response.json()._links;",
+									"  pm.expect(l).to.have.property('self');",
+									"  pm.expect(l).to.have.property('artist');",
+									"  pm.expect(l).to.have.property('tracks');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/albums/{{albumId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums",
+								"{{albumId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get albums of an artist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Itens em _embedded.albums', function () {",
+									"  pm.expect(pm.response.json()._embedded.albums).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/albums/by-artist/{{artistId}}?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums",
+								"by-artist",
+								"{{artistId}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Consulta personalizada 1:N: álbuns do artista."
+					}
+				},
+				{
+					"name": "Update an album",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Gravadora atualizada', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.label).to.eql('Rise Records');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/albums/{{albumId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums",
+								"{{albumId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"artistId\": {{artistId}},\n  \"title\": \"With Ears to See and Eyes to Hear\",\n  \"releaseYear\": 2010,\n  \"type\": \"ALBUM\",\n  \"label\": \"Rise Records\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 404 - álbum inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/albums/999999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums",
+								"999999"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 404 - artista inexistente na consulta",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/albums/by-artist/999999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums",
+								"by-artist",
+								"999999"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - formato inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"  pm.expect(j.message).to.include('ALBUM');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/albums/by-type/BOX",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums",
+								"by-type",
+								"BOX"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - ano fora do intervalo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"  pm.expect(j.details.length).to.be.at.least(1);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/albums",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"artistId\": {{artistId}},\n  \"title\": \"Álbum do Futuro\",\n  \"releaseYear\": 3000,\n  \"type\": \"ALBUM\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 404 - artista inexistente ao criar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/albums",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"artistId\": 999999,\n  \"title\": \"Álbum Órfão\",\n  \"releaseYear\": 2020,\n  \"type\": \"EP\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 409 - título duplicado no mesmo artista",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 409 Conflict', function () { pm.response.to.have.status(409); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(409);",
+									"  pm.expect(j.error).to.eql('Conflict');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/albums",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"artistId\": {{artistId}},\n  \"title\": \"With Ears to See and Eyes to Hear\",\n  \"releaseYear\": 2010,\n  \"type\": \"ALBUM\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Tracks",
+			"description": "Faixas (relação 1:N com o álbum da pasta 3). Cria duas faixas: trackId e track2Id.",
+			"item": [
+				{
+					"name": "Get all tracks",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Paginação respeitada (size=10)', function () {",
+									"  pm.expect(pm.response.json().page.size).to.eql(10);",
+									"});",
+									"pm.test('Itens em _embedded.tracks', function () {",
+									"  pm.expect(pm.response.json()._embedded.tracks).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tracks?page=0&size=10&sort=title,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "title,asc"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search tracks by title",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Itens em _embedded.tracks', function () {",
+									"  pm.expect(pm.response.json()._embedded.tracks).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tracks/search?title=heart&page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks",
+								"search"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "heart"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Consulta personalizada: o título contém o texto, sem diferenciar maiúsculas de minúsculas."
+					}
+				},
+				{
+					"name": "Create a track",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+									"pm.test('Header Location aponta para o novo recurso', function () {",
+									"  pm.expect(pm.response.headers.get('Location')).to.include('/tracks/');",
+									"});",
+									"pm.test('Links HATEOAS: self, update, delete, album, playlists', function () {",
+									"  const l = pm.response.json()._links;",
+									"  pm.expect(l).to.have.property('self');",
+									"  pm.expect(l).to.have.property('update');",
+									"  pm.expect(l).to.have.property('delete');",
+									"  pm.expect(l).to.have.property('album');",
+									"  pm.expect(l).to.have.property('playlists');",
+									"});",
+									"if (pm.response.code === 201) { pm.collectionVariables.set('trackId', pm.response.json().id); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tracks",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"albumId\": {{albumId}},\n  \"title\": \"Intro\",\n  \"trackNumber\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Guarda o id criado na variável trackId. A duração (opcional) entra no PUT seguinte."
+					}
+				},
+				{
+					"name": "Create a second track",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+									"pm.test('Header Location aponta para o novo recurso', function () {",
+									"  pm.expect(pm.response.headers.get('Location')).to.include('/tracks/');",
+									"});",
+									"pm.test('Links HATEOAS: self, update, delete', function () {",
+									"  const l = pm.response.json()._links;",
+									"  pm.expect(l).to.have.property('self');",
+									"  pm.expect(l).to.have.property('update');",
+									"  pm.expect(l).to.have.property('delete');",
+									"});",
+									"if (pm.response.code === 201) { pm.collectionVariables.set('track2Id', pm.response.json().id); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tracks",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"albumId\": {{albumId}},\n  \"title\": \"Outro\",\n  \"trackNumber\": 2,\n  \"durationSeconds\": 130\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Guarda o id criado na variável track2Id."
+					}
+				},
+				{
+					"name": "Get a specific track",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Título da faixa', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.title).to.eql('Intro');",
+									"});",
+									"pm.test('Título do álbum da faixa', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.albumTitle).to.eql('With Ears to See and Eyes to Hear');",
+									"});",
+									"pm.test('Links HATEOAS: self, album, playlists', function () {",
+									"  const l = pm.response.json()._links;",
+									"  pm.expect(l).to.have.property('self');",
+									"  pm.expect(l).to.have.property('album');",
+									"  pm.expect(l).to.have.property('playlists');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tracks/{{trackId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks",
+								"{{trackId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get tracks of an album",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Itens em _embedded.tracks', function () {",
+									"  pm.expect(pm.response.json()._embedded.tracks).to.be.an('array').that.is.not.empty;",
+									"});",
+									"pm.test('Duas faixas no álbum', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.page.totalElements).to.eql(2);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tracks/by-album/{{albumId}}?page=0&size=10&sort=trackNumber,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks",
+								"by-album",
+								"{{albumId}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "trackNumber,asc"
+								}
+							]
+						},
+						"description": "Consulta personalizada 1:N: faixas do álbum, na ordem do disco."
+					}
+				},
+				{
+					"name": "Update a track",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Duração atualizada', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.durationSeconds).to.eql(95);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tracks/{{trackId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks",
+								"{{trackId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"albumId\": {{albumId}},\n  \"title\": \"Intro\",\n  \"trackNumber\": 1,\n  \"durationSeconds\": 95\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 404 - faixa inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tracks/999999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks",
+								"999999"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 404 - álbum inexistente na consulta",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tracks/by-album/999999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks",
+								"by-album",
+								"999999"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - id com letras",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tracks/abc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks",
+								"abc"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - número e duração fora do intervalo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"  pm.expect(j.details.length).to.be.at.least(2);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tracks",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"albumId\": {{albumId}},\n  \"title\": \"Faixa Inválida\",\n  \"trackNumber\": 100,\n  \"durationSeconds\": 0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 404 - álbum inexistente ao criar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tracks",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"albumId\": 999999,\n  \"title\": \"Faixa Órfã\",\n  \"trackNumber\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 409 - número de faixa repetido",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 409 Conflict', function () { pm.response.to.have.status(409); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(409);",
+									"  pm.expect(j.error).to.eql('Conflict');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/tracks",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"albumId\": {{albumId}},\n  \"title\": \"Outra Intro\",\n  \"trackNumber\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Playlists",
+			"description": "Playlists e a relação N:N com as faixas da pasta 4. O 'Create a playlist' guarda o id em playlistId.",
+			"item": [
+				{
+					"name": "Get all playlists",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Paginação respeitada (size=10)', function () {",
+									"  pm.expect(pm.response.json().page.size).to.eql(10);",
+									"});",
+									"pm.test('Itens em _embedded.playlists', function () {",
+									"  pm.expect(pm.response.json()._embedded.playlists).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists?page=0&size=10&sort=name,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "name,asc"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search playlists by name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Itens em _embedded.playlists', function () {",
+									"  pm.expect(pm.response.json()._embedded.playlists).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/search?name=rotation&page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"search"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "rotation"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Consulta personalizada: o nome contém o texto, sem diferenciar maiúsculas de minúsculas."
+					}
+				},
+				{
+					"name": "Get playlists by visibility",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Itens em _embedded.playlists', function () {",
+									"  pm.expect(pm.response.json()._embedded.playlists).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/by-visibility/PUBLIC?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"by-visibility",
+								"PUBLIC"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Consulta personalizada por visibilidade (enum Visibility)."
+					}
+				},
+				{
+					"name": "Create a playlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+									"pm.test('Header Location aponta para o novo recurso', function () {",
+									"  pm.expect(pm.response.headers.get('Location')).to.include('/playlists/');",
+									"});",
+									"pm.test('Links HATEOAS: self, update, delete, tracks', function () {",
+									"  const l = pm.response.json()._links;",
+									"  pm.expect(l).to.have.property('self');",
+									"  pm.expect(l).to.have.property('update');",
+									"  pm.expect(l).to.have.property('delete');",
+									"  pm.expect(l).to.have.property('tracks');",
+									"});",
+									"if (pm.response.code === 201) { pm.collectionVariables.set('playlistId', pm.response.json().id); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/playlists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Road Trip Mix\",\n  \"description\": \"Músicas para viagens longas\",\n  \"visibility\": \"PUBLIC\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Guarda o id criado na variável playlistId. A playlist nasce vazia."
+					}
+				},
+				{
+					"name": "Get a specific playlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Playlist vazia', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.trackCount).to.eql(0);",
+									"});",
+									"pm.test('Links HATEOAS: self, tracks', function () {",
+									"  const l = pm.response.json()._links;",
+									"  pm.expect(l).to.have.property('self');",
+									"  pm.expect(l).to.have.property('tracks');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{playlistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{playlistId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update a playlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Visibilidade atualizada', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.visibility).to.eql('PRIVATE');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{playlistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{playlistId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Road Trip Mix\",\n  \"description\": \"Músicas para viagens longas e madrugadas\",\n  \"visibility\": \"PRIVATE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "Add a track to a playlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+									"pm.test('Header Location aponta para a lista de faixas', function () {",
+									"  pm.expect(pm.response.headers.get('Location')).to.include('/tracks');",
+									"});",
+									"pm.test('Playlist com 1 faixa', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.trackCount).to.eql(1);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{playlistId}}/tracks/{{trackId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{playlistId}}",
+								"tracks",
+								"{{trackId}}"
+							]
+						},
+						"description": "Relação N:N: coloca a faixa trackId na playlist."
+					}
+				},
+				{
+					"name": "Add another track to the playlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+									"pm.test('Playlist com 2 faixas', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.trackCount).to.eql(2);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{playlistId}}/tracks/{{track2Id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{playlistId}}",
+								"tracks",
+								"{{track2Id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get tracks of a playlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Itens em _embedded.tracks', function () {",
+									"  pm.expect(pm.response.json()._embedded.tracks).to.be.an('array').that.is.not.empty;",
+									"});",
+									"pm.test('Duas faixas na playlist', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.page.totalElements).to.eql(2);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{playlistId}}/tracks?page=0&size=10&sort=trackNumber,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{playlistId}}",
+								"tracks"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "trackNumber,asc"
+								}
+							]
+						},
+						"description": "Consulta personalizada N:N: faixas da playlist."
+					}
+				},
+				{
+					"name": "Get playlists of a track",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página HAL: bloco page e _links', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page).to.have.property('totalElements');",
+									"  pm.expect(j).to.have.property('_links');",
+									"});",
+									"pm.test('Itens em _embedded.playlists', function () {",
+									"  pm.expect(pm.response.json()._embedded.playlists).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tracks/{{trackId}}/playlists?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks",
+								"{{trackId}}",
+								"playlists"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Consulta personalizada N:N, do outro lado da relação: playlists que contêm a faixa."
+					}
+				},
+				{
+					"name": "Remove a track from a playlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 204 No Content', function () { pm.response.to.have.status(204); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{playlistId}}/tracks/{{track2Id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{playlistId}}",
+								"tracks",
+								"{{track2Id}}"
+							]
+						},
+						"description": "A faixa continua cadastrada; só sai da playlist."
+					}
+				},
+				{
+					"name": "ERRO 404 - playlist inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/999999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"999999"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - visibilidade inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"  pm.expect(j.message).to.include('PUBLIC');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/by-visibility/HIDDEN",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"by-visibility",
+								"HIDDEN"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - nome em branco",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"  pm.expect(j.details.length).to.be.at.least(1);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/playlists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"   \",\n  \"visibility\": \"PUBLIC\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 409 - nome duplicado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 409 Conflict', function () { pm.response.to.have.status(409); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(409);",
+									"  pm.expect(j.error).to.eql('Conflict');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/playlists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Road Trip Mix\",\n  \"visibility\": \"PUBLIC\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 409 - faixa já está na playlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 409 Conflict', function () { pm.response.to.have.status(409); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(409);",
+									"  pm.expect(j.error).to.eql('Conflict');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{playlistId}}/tracks/{{trackId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{playlistId}}",
+								"tracks",
+								"{{trackId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 404 - faixa não está na playlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{playlistId}}/tracks/{{track2Id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{playlistId}}",
+								"tracks",
+								"{{track2Id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 404 - faixa inexistente ao adicionar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{playlistId}}/tracks/999999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{playlistId}}",
+								"tracks",
+								"999999"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Erros gerais",
+			"description": "Entradas que quebram a API em outras: rota inexistente, método e Content-Type errados, JSON ruim, ordenação inválida. Todas devolvem o mesmo corpo de erro, nunca 500.",
+			"item": [
+				{
+					"name": "ERRO 404 - rota inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/rota-inexistente",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"rota-inexistente"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 405 - método não suportado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 405 Method Not Allowed', function () { pm.response.to.have.status(405); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(405);",
+									"  pm.expect(j.error).to.eql('Method Not Allowed');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 415 - Content-Type não suportado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 415 Unsupported Media Type', function () { pm.response.to.have.status(415); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(415);",
+									"  pm.expect(j.error).to.eql('Unsupported Media Type');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/plain"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"Banda Teste\", \"genre\": \"ROCK\"}",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - corpo ausente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - JSON malformado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"Banda Teste\", \"genre\": ",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - ordenação por campo inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"  pm.expect(j.message).to.include('foo');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists?sort=foo",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							],
+							"query": [
+								{
+									"key": "sort",
+									"value": "foo"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - id maior que o limite",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/99999999999999999999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"99999999999999999999"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Limpeza",
+			"description": "Remove tudo o que as pastas 1 a 5 criaram (e confere as cascatas). Depois disso a coleção pode rodar de novo do zero.",
+			"item": [
+				{
+					"name": "Delete an artist profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 204 No Content', function () { pm.response.to.have.status(204); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles/{{profileId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles",
+								"{{profileId}}"
+							]
+						},
+						"description": "O artista continua cadastrado."
+					}
+				},
+				{
+					"name": "ERRO 404 - perfil já removido",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artist-profiles/{{profileId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artist-profiles",
+								"{{profileId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete a track",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 204 No Content', function () { pm.response.to.have.status(204); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tracks/{{track2Id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks",
+								"{{track2Id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete an album",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 204 No Content', function () { pm.response.to.have.status(204); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/albums/{{albumId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums",
+								"{{albumId}}"
+							]
+						},
+						"description": "Remove junto a faixa que sobrou, que ainda estava na playlist."
+					}
+				},
+				{
+					"name": "ERRO 404 - faixa removida junto com o álbum",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tracks/{{trackId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks",
+								"{{trackId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get the playlist after the cascade",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('A faixa saiu da playlist', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.trackCount).to.eql(0);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{playlistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{playlistId}}"
+							]
+						},
+						"description": "A playlist continua existindo, mas sem a faixa que foi removida com o álbum."
+					}
+				},
+				{
+					"name": "Delete a playlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 204 No Content', function () { pm.response.to.have.status(204); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{playlistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{playlistId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete an artist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 204 No Content', function () { pm.response.to.have.status(204); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/{{artistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"{{artistId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 404 - artista já removido",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 404 Not Found', function () { pm.response.to.have.status(404); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(404);",
+									"  pm.expect(j.error).to.eql('Not Found');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/{{artistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"{{artistId}}"
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "artistId",
+			"value": ""
+		},
+		{
+			"key": "profileId",
+			"value": ""
+		},
+		{
+			"key": "albumId",
+			"value": ""
+		},
+		{
+			"key": "trackId",
+			"value": ""
+		},
+		{
+			"key": "track2Id",
+			"value": ""
+		},
+		{
+			"key": "playlistId",
+			"value": ""
+		}
+	]
+}
