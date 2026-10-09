@@ -1,6 +1,6 @@
 # Scene API
 
-API REST da **cena musical**: cadastra e consulta artistas, perfis, álbuns, faixas e playlists, com paginação, validação, documentação Swagger e links HATEOAS. Os dados de exemplo são carregados pela classe `DataLoader` e usam artistas do perfil do autor no Last.fm (Bring Me the Horizon, Title Fight, Asking Alexandria, blessthefall, Alesana e I Promised the World).
+API REST de catálogo musical: cadastra e consulta artistas, perfis, álbuns, faixas e playlists, com paginação, validação, documentação Swagger e links HATEOAS. Os dados de exemplo são carregados pela classe `DataLoader` e usam artistas do perfil do autor no Last.fm (Bring Me the Horizon, Title Fight, Asking Alexandria, blessthefall, Alesana e I Promised the World).
 
 > Projeto final da disciplina de **Web Services** (Senac TSI) — **Parte 1**.
 
@@ -981,4 +981,4 @@ postman/         coleção do Postman
 
 ## Autor
 
-**Vinicius** — Senac TSI, projeto final da disciplina de Web Services.
+**Vinícius** — Senac TSI, projeto final da disciplina de Web Services.

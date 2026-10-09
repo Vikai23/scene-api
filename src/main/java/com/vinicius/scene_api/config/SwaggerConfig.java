@@ -25,7 +25,7 @@ public class SwaggerConfig {
             "Artistas", "Perfis de Artista", "Álbuns", "Faixas", "Playlists");
 
     private static final String DESCRIPTION = """
-            API REST para catalogar a **cena musical**: artistas, perfis, álbuns, faixas e playlists. \
+            API REST de catálogo musical: artistas, perfis, álbuns, faixas e playlists. \
             Projeto final da disciplina de Web Services (Senac TSI), feito com Spring Boot, Spring Data JPA, H2, Bean Validation, \
             Spring HATEOAS e Springdoc. Os dados de exemplo são carregados pela classe `DataLoader` e usam artistas do perfil \
             do autor no Last.fm (Bring Me the Horizon, Title Fight, Asking Alexandria, blessthefall, Alesana, I Promised the World).
@@ -79,7 +79,7 @@ public class SwaggerConfig {
                         .version("1.0.0")
                         .description(DESCRIPTION)
                         .contact(new Contact()
-                                .name("Vinicius – Web Services (Senac TSI)"))
+                                .name("Vinícius – Web Services (Senac TSI)"))
                         .license(new License()
                                 .name("Apache 2.0")
                                 .url("https://www.apache.org/licenses/LICENSE-2.0")))

@@ -12,7 +12,7 @@
 	<artifactId>scene-api</artifactId>
 	<version>1.0.0</version>
 	<name>scene-api</name>
-	<description>Scene API: API REST da cena musical (artistas, perfis, álbuns, faixas e playlists). Projeto final da disciplina de Web Services.</description>
+	<description>Scene API: API REST de catálogo musical (artistas, perfis, álbuns, faixas e playlists). Projeto final da disciplina de Web Services.</description>
 	<properties>
 		<java.version>21</java.version>
 	</properties>

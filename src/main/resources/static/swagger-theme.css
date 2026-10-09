@@ -260,11 +260,12 @@ html body { background: transparent !important; color: var(--ink); font-family: 
   font: 15px/1.75 var(--f-zine);
   color: var(--on-black);
 }
-/* recado à mão perto do sigilo */
+/* assinatura à mão, embaixo das linhas de "perfil" (longe do sigilo) */
 .swagger-ui .info hgroup.main::before {
-  content: "made by vinicius <3";
-  position: absolute; right: 26px; bottom: 38px;
-  transform: rotate(-6deg);
+  content: "made by Vinícius <3";
+  position: absolute; left: 32px; bottom: 22px;
+  transform: rotate(-3deg);
+  transform-origin: left bottom;
   font: 19px/1 var(--f-hand);
   color: var(--hot);
   white-space: nowrap;
@@ -634,7 +635,7 @@ body::after {
       url('/hero-sigil.svg') right -50px bottom 14px / 220px auto no-repeat,
       #000;
   }
-  .swagger-ui .info hgroup.main::before { right: 14px; bottom: 28px; font-size: 15px; }
+  .swagger-ui .info hgroup.main::before { left: 18px; bottom: 18px; font-size: 15px; }
   .swagger-ui .info hgroup.main::after { font-size: clamp(11px, 3.2vw, 15px); white-space: pre-wrap; overflow-wrap: anywhere; }
   .swagger-ui .info .description::before { margin: 22px 16px 0; }
   .swagger-ui .info .renderedMarkdown { padding: 14px 16px 22px; }
