@@ -23,7 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Popula o banco H2 (em memória) ao subir a aplicação, com artistas e álbuns de uma biblioteca real do Last.fm.
+ * Popula o banco H2 (em memória) ao subir a aplicação. Os artistas foram escolhidos a partir do perfil do autor no
+ * Last.fm; álbuns, faixas, durações, perfis e playlists são cadastrados aqui mesmo, à mão (nada é importado do Last.fm).
  * As faixas são passadas como "título|m:ss"; quando a duração não é conhecida, basta deixar vazio o que vem depois da barra.
  */
 @Component
@@ -139,7 +140,7 @@ public class DataLoader implements CommandLineRunner {
             catalog.putIfAbsent(track.getTitle(), track);
         }
 
-        playlist(catalog, "Heavy Rotation", "As faixas que mais rodaram no Last.fm.", Visibility.PUBLIC,
+        playlist(catalog, "Heavy Rotation", "Faixas de vários álbuns para colocar no repeat.", Visibility.PUBLIC,
                 "Apology", "Shadow Moses", "Sleepwalking", "Final Episode (Let's Change the Channel)",
                 "A Message to the Unknown", "Coxton Yard");
 
