@@ -130,7 +130,7 @@ public class ArtistController {
 
     @Operation(
             summary = "Cadastra um novo artista",
-            description = "Cria um artista. Nome (2 a 100 caracteres, único) e gênero são obrigatórios; país (somente letras) e ano de formação (1900 a 2100) são opcionais."
+            description = "Cria um artista. Nome (2 a 100 caracteres, único) e gênero são obrigatórios; país (somente letras) e ano de formação (1000 a 2100) são opcionais."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Created – artista criado; o cabeçalho Location aponta para o novo recurso"),

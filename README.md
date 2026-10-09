@@ -50,7 +50,7 @@ Teste automatizado do Spring (sobe o contexto inteiro com o H2 e a carga inicial
 
 ### Coleção do Postman
 
-A coleção está em [`postman/scene-api.postman_collection.json`](postman/scene-api.postman_collection.json): **85 requisições** (os 40 endpoints, 3 passos extras de fluxo e 42 casos de erro `400`, `404`, `405`, `409` e `415`), agrupadas em 7 pastas.
+A coleção está em [`postman/scene-api.postman_collection.json`](postman/scene-api.postman_collection.json): **87 requisições** (os 40 endpoints, 4 passos extras de fluxo e 43 casos de erro `400`, `404`, `405`, `409` e `415`), agrupadas em 7 pastas.
 
 1. No Postman: **Import** → selecione o arquivo `.json`.
 2. Suba a aplicação (`http://localhost:8080`). A variável `baseUrl` já vem configurada.
@@ -135,6 +135,15 @@ erDiagram
 
 Enums: `Genre` (`ROCK`, `ALTERNATIVE`, `PUNK`, `EMO`, `POST_HARDCORE`, `METALCORE`, `METAL`, `POP`, `HIP_HOP`, `ELECTRONIC`, `JAZZ`, `FOLK`, `CLASSICAL`, `OTHER`), `AlbumType` (`ALBUM`, `EP`, `SINGLE`, `COMPILATION`, `LIVE`), `Visibility` (`PUBLIC`, `PRIVATE`).
 
+### Decisões e limitações do modelo
+
+O modelo é uma simplificação de propósito: cobre os três tipos de relacionamento do enunciado sem complicar a API. O que ele não representa:
+
+- **Álbum com vários artistas.** Cada álbum pertence a um artista. Colaborações, splits e coletâneas de "vários artistas" exigiriam um N:N entre `Album` e `Artist`, com uma tabela de ligação.
+- **Participações especiais (feat.).** A faixa não tem artistas próprios; ela pertence ao álbum e, por ele, a um artista. Representar participações exigiria um N:N entre `Track` e `Artist`.
+- **A mesma música em mais de um lançamento.** `Track` é a faixa dentro de um álbum, EP ou single, como nos serviços de streaming, em que cada lançamento lista as suas próprias faixas. Uma música lançada como single e depois no álbum vira duas faixas, uma em cada lançamento. Um modelo mais completo separaria a música (a gravação) da faixa no lançamento.
+- **Artistas históricos.** `formedYear` aceita de 1000 a 2100, para caberem, por exemplo, compositores clássicos; em artista solo, vale o ano de início da carreira.
+
 ### Consultas úteis no Console do H2
 
 As tabelas guardam apenas a **chave estrangeira** (por exemplo, `tracks.album_id`), nunca uma cópia do nome do outro lado: assim o título de um álbum existe em um único lugar e não fica desatualizado. A API já devolve os nomes nas respostas (`albumTitle`, `artistName`); no banco, os nomes aparecem com um `JOIN`. A tabela `playlist_tracks` é só a tabela de ligação do N:N, com `playlist_id` e `track_id`.
@@ -194,7 +203,7 @@ As mesmas regras valem na entrada (DTOs `*Request`) e nas entidades (Bean Valida
 | `Artist` | `name` | obrigatório; 2 a 100 caracteres; ao menos uma letra; único (sem diferenciar maiúsculas de minúsculas) |
 | `Artist` | `genre` | obrigatório; enum `Genre` |
 | `Artist` | `country` | opcional; 2 a 60 caracteres; somente letras, espaços e `. , ' -` |
-| `Artist` | `formedYear` | opcional; de 1900 a 2100 |
+| `Artist` | `formedYear` | opcional; de 1000 a 2100 (cabem artistas históricos, como compositores clássicos) |
 | `ArtistProfile` | `artistId` | obrigatório; o artista precisa existir e ainda não ter perfil (1:1); não muda depois de criado |
 | `ArtistProfile` | `biography` | obrigatório; 10 a 1000 caracteres |
 | `ArtistProfile` | `hometown` | opcional; 2 a 100 caracteres; somente letras, espaços e `. , ' -` |
@@ -218,6 +227,13 @@ As mesmas regras valem na entrada (DTOs `*Request`) e nas entidades (Bean Valida
 ### Paginação
 
 Todas as listagens (inclusive as buscas e as consultas por relação) são paginadas e aceitam os mesmos parâmetros de query: `page` (começa em 0), `size` (padrão 10, máximo 50) e `sort` (ex.: `sort=name,asc`). Um campo de ordenação que não existe devolve `400`.
+
+### Listas vazias, remoções e valores inválidos
+
+- **Lista vazia não é erro.** Quando a consulta não encontra nada (nenhum artista de um gênero, uma faixa que não está em nenhuma playlist, uma busca sem resultado), a resposta é `200 OK` com a página vazia: `_embedded` ausente e `page.totalElements = 0`. O `404` fica para quando o **recurso pedido pelo id** não existe; por exemplo, `GET /tracks/999/playlists` devolve `404` se a faixa 999 não existir, mas `200` com página vazia se ela existir e não estiver em nenhuma playlist.
+- **Remoção devolve `204 No Content`, sem corpo.** Pelo HTTP, o `204` significa "deu certo e não há nada a devolver"; o próprio status é a confirmação. Se o id não existir ou for inválido, a resposta é `404` ou `400`, com o corpo de erro padrão.
+- **Enum inválido só aparece fora do Swagger.** No Swagger UI o gênero (e o tipo de álbum e a visibilidade) é uma lista de opções, então não dá para enviar um valor que não existe. O `400` acontece quando a requisição é feita por outro meio (Postman, navegador, curl), por exemplo `GET /artists/by-genre/SAMBA`.
+- **Cidade natal e país são validados só no formato.** `hometown` e `country` aceitam apenas letras (com acentos), espaço, ponto, vírgula, apóstrofo e hífen, e têm tamanho limitado. A API não consulta nenhuma base de lugares, então ela não sabe se a cidade existe de verdade.
 
 ### Links HATEOAS
 
@@ -362,14 +378,14 @@ Retorna os dados de um único artista a partir do seu identificador, com links p
   POST /artists
 ```
 
-Cria um artista. Nome (2 a 100 caracteres, único) e gênero são obrigatórios; país (somente letras) e ano de formação (1900 a 2100) são opcionais.
+Cria um artista. Nome (2 a 100 caracteres, único) e gênero são obrigatórios; país (somente letras) e ano de formação (1000 a 2100) são opcionais.
 
 | Parameter | Type     | Description                |
 | :-------- | :------- | :------------------------- |
 | `name` | `string` | **Required**. Nome do artista ou banda (único, sem diferenciar maiúsculas de minúsculas). De 2 a 100 caracteres, com ao menos uma letra; aceita números e pontuação comum. |
 | `genre` | `string` | **Required**. Gênero principal. Valores aceitos: ROCK, ALTERNATIVE, PUNK, EMO, POST_HARDCORE, METALCORE, METAL, POP, HIP_HOP, ELECTRONIC, JAZZ, FOLK, CLASSICAL, OTHER |
 | `country` | `string` | País de origem (opcional). De 2 a 60 caracteres, somente letras, espaços e os símbolos . , ' - (números não são aceitos). |
-| `formedYear` | `integer` | Ano de formação (opcional), de 1900 a 2100 |
+| `formedYear` | `integer` | Ano de formação da banda ou, em artista solo, de início da carreira (opcional). De 1000 a 2100, para aceitar também artistas históricos, como compositores clássicos. |
 
 Exemplo de corpo:
 
@@ -398,7 +414,7 @@ Substitui todos os dados de um artista existente. As mesmas regras de validaçã
 | `name` | `string` | **Required**. Nome do artista ou banda (único, sem diferenciar maiúsculas de minúsculas). De 2 a 100 caracteres, com ao menos uma letra; aceita números e pontuação comum. |
 | `genre` | `string` | **Required**. Gênero principal. Valores aceitos: ROCK, ALTERNATIVE, PUNK, EMO, POST_HARDCORE, METALCORE, METAL, POP, HIP_HOP, ELECTRONIC, JAZZ, FOLK, CLASSICAL, OTHER |
 | `country` | `string` | País de origem (opcional). De 2 a 60 caracteres, somente letras, espaços e os símbolos . , ' - (números não são aceitos). |
-| `formedYear` | `integer` | Ano de formação (opcional), de 1900 a 2100 |
+| `formedYear` | `integer` | Ano de formação da banda ou, em artista solo, de início da carreira (opcional). De 1000 a 2100, para aceitar também artistas históricos, como compositores clássicos. |
 
 **Status:** `200` OK · `400` Bad Request · `404` Not Found · `409` Conflict
 

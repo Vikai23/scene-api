@@ -31,9 +31,10 @@ public record ArtistRequest(
         @Pattern(regexp = ValidationRules.LETTERS_ONLY, message = ValidationRules.LETTERS_ONLY_MESSAGE)
         String country,
 
-        @Schema(description = "Ano de formação (opcional), de 1900 a 2100", example = "2009",
-                minimum = "1900", maximum = "2100")
-        @Min(1900)
+        @Schema(description = "Ano de formação da banda ou, em artista solo, de início da carreira (opcional). "
+                + "De 1000 a 2100, para aceitar também artistas históricos, como compositores clássicos.",
+                example = "2009", minimum = "1000", maximum = "2100")
+        @Min(1000)
         @Max(2100)
         Integer formedYear
 ) {

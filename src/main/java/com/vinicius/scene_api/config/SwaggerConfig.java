@@ -1,9 +1,12 @@
 package com.vinicius.scene_api.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springdoc.core.properties.SwaggerUiConfigProperties;
@@ -23,6 +26,14 @@ public class SwaggerConfig {
 
     private static final List<String> TAG_ORDER = List.of(
             "Artistas", "Perfis de Artista", "Álbuns", "Faixas", "Playlists");
+
+    private static final String PAGE_DESCRIPTION =
+            "Número da página, começando em 0 (a primeira página é a 0). Padrão: 0.";
+    private static final String SIZE_DESCRIPTION =
+            "Quantidade de itens por página. Padrão: 10. Máximo: 50 (valores maiores são reduzidos para 50).";
+    private static final String SORT_DESCRIPTION =
+            "Ordenação no formato campo,asc ou campo,desc (ex.: name,asc). Os campos aceitos estão na descrição da rota; "
+                    + "um campo que não existe dá 400 Bad Request. Padrão: id,asc.";
 
     private static final String DESCRIPTION = """
             API REST de catálogo musical: artistas, perfis, álbuns, faixas e playlists. \
@@ -110,6 +121,53 @@ public class SwaggerConfig {
             }));
             openApi.setTags(sorted);
         };
+    }
+
+    /**
+     * O springdoc descreve page, size e sort em inglês. Este customizador troca esses textos por versões em português
+     * e faz o mesmo com o bloco "page" das respostas paginadas, para a documentação não misturar idiomas.
+     */
+    @Bean
+    public OpenApiCustomizer pagingDescriptionsCustomizer() {
+        return openApi -> {
+            if (openApi.getPaths() != null) {
+                openApi.getPaths().values().forEach(pathItem -> {
+                    for (Operation operation : pathItem.readOperations()) {
+                        if (operation.getParameters() == null) {
+                            continue;
+                        }
+                        for (Parameter parameter : operation.getParameters()) {
+                            if (!"query".equals(parameter.getIn())) {
+                                continue;
+                            }
+                            if ("page".equals(parameter.getName())) {
+                                parameter.setDescription(PAGE_DESCRIPTION);
+                            } else if ("size".equals(parameter.getName())) {
+                                parameter.setDescription(SIZE_DESCRIPTION);
+                            } else if ("sort".equals(parameter.getName())) {
+                                parameter.setDescription(SORT_DESCRIPTION);
+                            }
+                        }
+                    }
+                });
+            }
+            if (openApi.getComponents() != null && openApi.getComponents().getSchemas() != null) {
+                Schema<?> metadata = openApi.getComponents().getSchemas().get("PageMetadata");
+                if (metadata != null && metadata.getProperties() != null) {
+                    describe(metadata, "size", "Quantidade de itens por página");
+                    describe(metadata, "totalElements", "Total de itens encontrados, somando todas as páginas");
+                    describe(metadata, "totalPages", "Total de páginas");
+                    describe(metadata, "number", "Número da página atual (começa em 0)");
+                }
+            }
+        };
+    }
+
+    private static void describe(Schema<?> schema, String property, String description) {
+        Schema<?> field = schema.getProperties().get(property);
+        if (field != null) {
+            field.setDescription(description);
+        }
     }
 
     /** Troca o transformador padrão do Swagger UI pelo que injeta o CSS e o favicon da API. */

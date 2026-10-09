@@ -21,7 +21,7 @@ public record ArtistResponse(
         @Schema(description = "País de origem", example = "United Kingdom")
         String country,
 
-        @Schema(description = "Ano de formação", example = "2004")
+        @Schema(description = "Ano de formação da banda ou, em artista solo, de início da carreira", example = "2004")
         Integer formedYear
 ) {
     public static ArtistResponse from(Artist artist) {

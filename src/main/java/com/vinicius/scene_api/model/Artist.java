@@ -35,7 +35,7 @@ public class Artist {
     @Column(length = 60)
     private String country;
 
-    @Min(1900)
+    @Min(1000)
     @Max(2100)
     private Integer formedYear;
 

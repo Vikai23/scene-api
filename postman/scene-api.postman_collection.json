@@ -165,6 +165,54 @@
 					}
 				},
 				{
+					"name": "Get artists by genre (nenhum encontrado)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK (gênero sem artistas não é erro)', function () { pm.response.to.have.status(200); });",
+									"pm.test('Página vazia: totalElements = 0 e nenhum item', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('page');",
+									"  pm.expect(j.page.totalElements).to.eql(0);",
+									"  const items = (j._embedded && j._embedded.artists) || [];",
+									"  pm.expect(items).to.be.an('array').that.is.empty;",
+									"  pm.expect(j).to.have.property('_links');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/by-genre/JAZZ?page=0&size=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"by-genre",
+								"JAZZ"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Gênero válido, mas sem nenhum artista cadastrado: a resposta é 200 com a página vazia (page.totalElements = 0). O 404 fica para quando o recurso pedido pelo id não existe."
+					}
+				},
+				{
 					"name": "Create an artist",
 					"event": [
 						{
@@ -482,6 +530,47 @@
 								}
 							}
 						}
+					}
+				},
+				{
+					"name": "ERRO 400 - gênero inválido na URL",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"  pm.expect(j.message).to.include('\\'genre\\'');",
+									"  pm.expect(j.message).to.include('Valores aceitos');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/by-genre/SAMBA",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"by-genre",
+								"SAMBA"
+							]
+						},
+						"description": "No Swagger o gênero é um dropdown, então este 400 só aparece quando a requisição é feita fora dele (Postman, navegador, curl). A mensagem lista os valores aceitos."
 					}
 				},
 				{
