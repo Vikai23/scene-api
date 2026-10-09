@@ -25,6 +25,8 @@ import java.util.Map;
 /**
  * Popula o banco H2 (em memória) ao subir a aplicação. Os artistas foram escolhidos a partir do perfil do autor no
  * Last.fm; álbuns, faixas, durações, perfis e playlists são cadastrados aqui mesmo, à mão (nada é importado do Last.fm).
+ * Gravadoras, sites e Instagram foram conferidos em fontes públicas (Wikipedia e sites oficiais); o que não foi
+ * confirmado fica em branco (null), porque esses campos são opcionais.
  * As faixas são passadas como "título|m:ss"; quando a duração não é conhecida, basta deixar vazio o que vem depois da barra.
  */
 @Component
@@ -68,28 +70,28 @@ public class DataLoader implements CommandLineRunner {
         profile(titleFight,
                 "Banda de Kingston, Pensilvânia, formada em 2003. Está em hiato por tempo indeterminado desde janeiro de 2018. "
                         + "Shed (2011) saiu pela SideOneDummy Records.",
-                "Kingston, Pennsylvania", null, null);
+                "Kingston, Pennsylvania", "https://titlefight.tumblr.com", null);
 
         Artist askingAlexandria = artist("Asking Alexandria", Genre.METALCORE, "United Kingdom", 2008);
         profile(askingAlexandria,
                 "Banda britânica de York formada em 2008. Stand Up and Scream (2009) é o álbum de estreia do grupo.",
-                "York, England", null, null);
+                "York, England", "https://askingalexandria.com", "askingalexandria");
 
         Artist blessthefall = artist("blessthefall", Genre.METALCORE, "United States", 2003);
         profile(blessthefall,
-                "Banda de Phoenix, Arizona, formada em 2003. His Last Walk (2007) é o álbum de estreia, seguido por Witness (2009).",
+                "Banda de Phoenix, Arizona, formada em 2003. His Last Walk (2006) é o álbum de estreia, seguido por Witness (2009).",
                 "Phoenix, Arizona", null, null);
 
         Artist alesana = artist("Alesana", Genre.POST_HARDCORE, "United States", 2004);
         profile(alesana,
                 "Banda de Raleigh, Carolina do Norte, formada em 2004. On Frail Wings of Vanity and Wax (2006) traz a faixa Apology.",
-                "Raleigh, North Carolina", null, null);
+                "Raleigh, North Carolina", "https://www.alesana.store", "alesanaofficialig");
 
         // I Promised The World fica sem perfil de propósito, para dar para testar o POST /artist-profiles e o 404 por artista.
         Artist iPromisedTheWorld = artist("I Promised The World", Genre.POST_HARDCORE, "United States", 2020);
 
         // ---------- Álbuns (1:N) e faixas (1:N) ----------
-        album(bmth, "Sempiternal", 2013, AlbumType.ALBUM, null,
+        album(bmth, "Sempiternal", 2013, AlbumType.ALBUM, "RCA Records",
                 "Can You Feel My Heart|3:48", "The House of Wolves|3:25", "Empire (Let Them Sing)|3:45",
                 "Sleepwalking|3:50", "Go to Hell, for Heaven's Sake|4:02", "Shadow Moses|4:03",
                 "And the Snakes Start to Sing|5:01", "Seen It All Before|4:07", "Antivist|3:13",
@@ -101,7 +103,7 @@ public class DataLoader implements CommandLineRunner {
                 "Safe In Your Skin|2:11", "Where Am I?|3:06", "Your Screen Door|2:08", "27|2:27",
                 "Stab|2:00", "GMT (Greenwich Mean Time)|3:37");
 
-        album(askingAlexandria, "Stand Up and Scream", 2009, AlbumType.ALBUM, null,
+        album(askingAlexandria, "Stand Up and Scream", 2009, AlbumType.ALBUM, "Sumerian Records",
                 "Alerion|2:15", "Final Episode (Let's Change the Channel)|4:02", "A Candlelit Dinner With Inamorta|4:04",
                 "Nobody Don't Dance No More|4:00", "Hey There Mr. Brooks|4:09", "Hiatus|1:45",
                 "If You Can't Ride Two Horses At Once...You Should Get Out Of The Circus|3:46",
@@ -109,18 +111,18 @@ public class DataLoader implements CommandLineRunner {
                 "I Used to Have a Best Friend (But Then He Gave Me an STD)|4:06", "A Prophecy|3:33",
                 "I Was Once, Possibly, Maybe, Perhaps a Cowboy King|3:41", "When Everyday's the Weekend|4:23");
 
-        album(blessthefall, "His Last Walk", 2007, AlbumType.ALBUM, null,
+        album(blessthefall, "His Last Walk", 2006, AlbumType.ALBUM, "Science Records",
                 "A Message to the Unknown|3:32", "Guys Like You Make Us Look Bad|3:55", "Higinia|2:46",
                 "Could Tell a Love|2:50", "Rise Up|3:42", "Times Like These|4:07", "Pray|4:18",
                 "With Eyes Wide Shut|2:54", "Wait for Tomorrow|3:25", "Black Rose Dying|4:03", "His Last Walk|10:31");
 
-        album(blessthefall, "Witness", 2009, AlbumType.ALBUM, null,
+        album(blessthefall, "Witness", 2009, AlbumType.ALBUM, "Fearless Records",
                 "2.0|1:02", "What's Left of Me|3:33", "To Hell and Back|3:21", "God Wears Gucci|4:09",
                 "Hey Baby, Here's That Song You Wanted|3:14", "Witness|3:13", "Last Ones Left|2:54",
                 "Five Ninety|3:52", "We'll Sleep When We're Dead|4:14", "Skinwalkers|4:01",
                 "You Deserve Nothing and I Hope You Get Less|3:39", "Stay Still|4:12");
 
-        album(alesana, "On Frail Wings of Vanity and Wax", 2006, AlbumType.ALBUM, null,
+        album(alesana, "On Frail Wings of Vanity and Wax", 2006, AlbumType.ALBUM, "Tragic Hero Records",
                 "Icarus|1:00", "Ambrosia|3:05", "Pathetic, Ordinary|4:00", "Alchemy Sounded Good At the Time|4:13",
                 "Daggers Speak Louder Than Words|3:27", "The Last Three Letters|3:32", "Apology|3:59",
                 "Tilting The Hourglass|3:48", "This Conversation is Over|3:23", "Congratulations, I Hate You|4:02",
@@ -132,7 +134,7 @@ public class DataLoader implements CommandLineRunner {
                 "Don't Just Stand There|4:05", "I Hold On Twice|3:40", "At Least, Be Human|3:12");
 
         // EP sem faixas cadastradas ainda: serve para testar a consulta por tipo de álbum.
-        album(iPromisedTheWorld, "I Promised the World", 2026, AlbumType.EP, null);
+        album(iPromisedTheWorld, "I Promised the World", 2026, AlbumType.EP, "Rise Records");
 
         // ---------- Playlists (N:N com as faixas) ----------
         Map<String, Track> catalog = new HashMap<>();

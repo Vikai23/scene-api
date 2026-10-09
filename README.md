@@ -76,6 +76,8 @@ O H2 é **em memória**: os dados somem ao encerrar a aplicação. Por isso, ao 
 - 82 faixas, com número e duração;
 - 4 playlists, ligando faixas de álbuns diferentes (relação N:N): *Heavy Rotation* (PUBLIC), *Treino Pesado* (PRIVATE), *Curtas e Grossas* (PUBLIC), *Madrugada* (PRIVATE).
 
+Gravadoras, sites e Instagram foram conferidos em fontes públicas (Wikipedia e sites oficiais). O que não foi confirmado fica `null`, porque `label`, `website` e `instagram` são campos opcionais.
+
 ## Modelo de dados
 
 ```mermaid
@@ -132,6 +134,56 @@ erDiagram
 | `Playlist` | Lista de faixas de qualquer artista ou álbum | N:N com `Track` (tabela `playlist_tracks`) |
 
 Enums: `Genre` (`ROCK`, `ALTERNATIVE`, `PUNK`, `EMO`, `POST_HARDCORE`, `METALCORE`, `METAL`, `POP`, `HIP_HOP`, `ELECTRONIC`, `JAZZ`, `FOLK`, `CLASSICAL`, `OTHER`), `AlbumType` (`ALBUM`, `EP`, `SINGLE`, `COMPILATION`, `LIVE`), `Visibility` (`PUBLIC`, `PRIVATE`).
+
+### Consultas úteis no Console do H2
+
+As tabelas guardam apenas a **chave estrangeira** (por exemplo, `tracks.album_id`), nunca uma cópia do nome do outro lado: assim o título de um álbum existe em um único lugar e não fica desatualizado. A API já devolve os nomes nas respostas (`albumTitle`, `artistName`); no banco, os nomes aparecem com um `JOIN`. A tabela `playlist_tracks` é só a tabela de ligação do N:N, com `playlist_id` e `track_id`.
+
+Faixas com o álbum e o artista:
+
+```sql
+SELECT t.id, t.track_number, t.title AS faixa, a.title AS album, ar.name AS artista
+FROM tracks t
+JOIN albums a ON a.id = t.album_id
+JOIN artists ar ON ar.id = a.artist_id
+ORDER BY a.id, t.track_number;
+```
+
+Playlists com o nome das faixas:
+
+```sql
+SELECT p.id AS playlist_id, p.name AS playlist, t.title AS faixa, a.title AS album, ar.name AS artista
+FROM playlist_tracks pt
+JOIN playlists p ON p.id = pt.playlist_id
+JOIN tracks t ON t.id = pt.track_id
+JOIN albums a ON a.id = t.album_id
+JOIN artists ar ON ar.id = a.artist_id
+ORDER BY p.id, t.id;
+```
+
+Perfis com o nome do artista, e artistas que ainda não têm perfil (a relação 1:1 é opcional):
+
+```sql
+SELECT ar.name AS artista, pr.hometown, pr.website, pr.instagram
+FROM artist_profiles pr
+JOIN artists ar ON ar.id = pr.artist_id;
+
+SELECT ar.id, ar.name
+FROM artists ar
+LEFT JOIN artist_profiles pr ON pr.artist_id = ar.id
+WHERE pr.id IS NULL;
+```
+
+Álbuns com a gravadora e a quantidade de faixas de cada um:
+
+```sql
+SELECT a.id, a.title AS album, a.release_year AS ano, COALESCE(a.record_label, '(sem gravadora)') AS gravadora,
+       COUNT(t.id) AS faixas
+FROM albums a
+LEFT JOIN tracks t ON t.album_id = a.id
+GROUP BY a.id, a.title, a.release_year, a.record_label
+ORDER BY a.id;
+```
 
 ### Regras de validação
 
