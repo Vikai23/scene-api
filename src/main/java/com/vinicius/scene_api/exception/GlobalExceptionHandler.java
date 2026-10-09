@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -137,6 +138,33 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PropertyReferenceException.class)
     public ResponseEntity<ApiError> handleInvalidSort(PropertyReferenceException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, "Campo de ordenação inexistente: " + ex.getPropertyName(), request, List.of());
+    }
+
+    /**
+     * Paginação ou ordenação que o banco não consegue executar, por exemplo página x tamanho acima do limite de
+     * inteiro (page=999999999). Quando a requisição traz page, size ou sort, o erro é do cliente e vira 400;
+     * nos demais casos segue o caminho de sempre.
+     */
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    public ResponseEntity<ApiError> handleInvalidDataAccess(InvalidDataAccessApiUsageException ex, HttpServletRequest request) {
+        boolean pagedRequest = request.getParameter("page") != null
+                || request.getParameter("size") != null
+                || request.getParameter("sort") != null;
+        if (!pagedRequest) {
+            return handleAny(ex, request);
+        }
+        String reason = ex.getMostSpecificCause().getMessage();
+        log.warn("Paginação/ordenação rejeitada em {} {}: {}", request.getMethod(), request.getRequestURI(), reason);
+        PropertyReferenceException invalidSort = findCause(ex, PropertyReferenceException.class);
+        if (invalidSort != null) {
+            return handleInvalidSort(invalidSort, request);
+        }
+        if (reason != null && reason.contains("offset")) {
+            return build(HttpStatus.BAD_REQUEST,
+                    "Número de página muito grande para o tamanho informado (página x tamanho passa de "
+                            + Integer.MAX_VALUE + ")", request, List.of());
+        }
+        return build(HttpStatus.BAD_REQUEST, "Parâmetros de paginação ou ordenação inválidos", request, List.of());
     }
 
     // ---------- 409: integridade do banco ----------
