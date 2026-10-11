@@ -1,32 +1,52 @@
 # Scene API
 
-API REST de catálogo musical: cadastra e consulta artistas, perfis, álbuns, faixas e playlists, com paginação, validação, documentação Swagger e links HATEOAS. Os dados de exemplo são carregados pela classe `DataLoader` e usam artistas do perfil do autor no Last.fm (Bring Me the Horizon, Title Fight, Asking Alexandria, blessthefall, Alesana e I Promised the World).
+API REST de catálogo musical em **Java 21** e **Spring Boot**: artistas, perfis, álbuns, faixas e playlists, com os três tipos de relacionamento (1:1, 1:N e N:N), paginação, validação, links HATEOAS e documentação Swagger.
 
-> Projeto final da disciplina de **Web Services** (Senac TSI) — **Parte 1**.
+> Projeto final da disciplina de **Web Services** (Senac TSI) — **Parte 1**, entregue em out/2026.
 
-## Sumário
+**40 endpoints** · **87 requisições no Postman** (43 delas de erro) · **105 registros de exemplo** carregados ao subir
 
-- [Tecnologias](#tecnologias)
+![Swagger UI da Scene API, com tema customizado](docs/swagger-hero.png)
+
+---
+
+## Índice
+
+- [Destaques](#destaques)
 - [Como executar](#como-executar)
 - [Dados iniciais](#dados-iniciais)
 - [Modelo de dados](#modelo-de-dados)
 - [Convenções da API](#convenções-da-api)
+- [Regras de validação](#regras-de-validação)
 - [API Reference](#api-reference)
+- [Consultas no Console do H2](#consultas-no-console-do-h2)
 - [Estrutura do projeto](#estrutura-do-projeto)
 - [Autor](#autor)
 
-## Tecnologias
+## Destaques
 
-- Java 21 · Maven · Spring Boot 4.1.1
-- Spring Web MVC · Spring Data JPA · Hibernate
-- Bean Validation (Jakarta Validation)
-- Spring HATEOAS (formato HAL)
-- H2 (banco em memória)
-- Springdoc OpenAPI / Swagger UI 3.1.1 (com tema customizado)
+- **Arquitetura em camadas:** `controller` → `service` → `repository`, com DTOs separados para entrada (`*Request`) e saída (`*Response`). As entidades JPA não vazam para fora da API.
+- **Os três relacionamentos do enunciado:** 1:1 (artista ↔ perfil), 1:N (artista → álbuns → faixas) e N:N (playlists ↔ faixas), cada um com endpoints próprios de consulta.
+- **Erros padronizados:** um `GlobalExceptionHandler` devolve sempre o mesmo corpo, com a lista campo a campo nos erros de validação. Oito status diferentes, cada um com o seu caso. ([detalhes](#erros))
+- **Validação em dois níveis:** as mesmas regras nos DTOs de entrada e nas entidades (Bean Validation), com expressões regulares compartilhadas em `validation/`.
+- **HATEOAS (HAL):** cada recurso traz `_links` para si mesmo, para a coleção e para os recursos relacionados; as listagens vêm em `PagedModel`.
+- **Paginação e ordenação** em todas as listagens, inclusive nas buscas e nas consultas por relação.
+- **Testado:** teste automatizado que sobe o contexto inteiro do Spring e coleção do Postman com testes de status, de corpo e de links — incluindo 43 casos de erro.
+
+### Tecnologias
+
+| Camada | O que foi usado |
+| :-- | :-- |
+| Linguagem e build | Java 21 · Maven (wrapper `mvnw`) |
+| Framework | Spring Boot 4.1.1 · Spring Web MVC · Spring Data JPA · Hibernate |
+| Validação | Bean Validation (Jakarta Validation) |
+| Hipermídia | Spring HATEOAS (formato HAL) |
+| Banco | H2 (em memória) |
+| Documentação | Springdoc OpenAPI / Swagger UI 3.1.1, com tema customizado |
 
 ## Como executar
 
-Requisitos: **JDK 21 ou superior**. O Maven já vem junto no projeto (`mvnw`).
+Requisito: **JDK 21 ou superior**. O Maven já vem junto no projeto (`mvnw`), então não precisa instalar nada além do JDK.
 
 ```bash
 # Linux / macOS
@@ -44,17 +64,31 @@ A API sobe em `http://localhost:8080`; abrir a raiz já redireciona para o Swagg
 | OpenAPI (JSON) | http://localhost:8080/v3/api-docs |
 | Console do H2 | http://localhost:8080/h2-console |
 
-Console do H2: JDBC URL `jdbc:h2:mem:scenedb`, usuário `sa`, senha em branco.
+No Console do H2: JDBC URL `jdbc:h2:mem:scenedb`, usuário `sa`, senha em branco.
 
-Teste automatizado do Spring (sobe o contexto inteiro com o H2 e a carga inicial): `./mvnw test`.
+O Swagger UI tem tema próprio e traz, além dos 40 endpoints, o modelo de dados, as convenções de paginação e a tabela de status:
+
+<!-- Captura dos endpoints: abra o grupo ARTISTAS no Swagger (deixando os endpoints recolhidos),
+     tire o print e salve como docs/swagger-endpoints.png; depois descomente a linha abaixo.
+     ![Os 40 endpoints, agrupados por recurso](docs/swagger-endpoints.png) -->
+
+![Tabela de status HTTP documentada no Swagger UI](docs/swagger-erros.png)
+
+Para rodar o teste automatizado (sobe o contexto inteiro com o H2 e a carga inicial):
+
+```bash
+./mvnw test
+```
 
 ### Coleção do Postman
 
-A coleção está em [`postman/scene-api.postman_collection.json`](postman/scene-api.postman_collection.json): **87 requisições** (os 40 endpoints, 4 passos extras de fluxo e 43 casos de erro `400`, `404`, `405`, `409` e `415`), agrupadas em 7 pastas.
+A coleção está em [`postman/scene-api.postman_collection.json`](postman/scene-api.postman_collection.json): **87 requisições** — os 40 endpoints, 4 passos extras de fluxo e 43 casos de erro (`400`, `404`, `405`, `409` e `415`) —, agrupadas em 7 pastas.
 
 1. No Postman: **Import** → selecione o arquivo `.json`.
 2. Suba a aplicação (`http://localhost:8080`). A variável `baseUrl` já vem configurada.
-3. Rode as pastas de **1 a 7**, de cima para baixo (ou use o **Collection Runner**). Os ids criados são guardados automaticamente em variáveis (`artistId`, `profileId`, `albumId`, `trackId`, `track2Id` e `playlistId`) e cada requisição tem testes de status, de corpo e de links HATEOAS.
+3. Rode as pastas **1 a 7**, de cima para baixo (ou use o **Collection Runner**).
+
+Os ids criados são guardados automaticamente em variáveis (`artistId`, `profileId`, `albumId`, `trackId`, `track2Id` e `playlistId`), e cada requisição tem testes de status, de corpo e de links HATEOAS.
 
 | Pasta | O que faz |
 | :-- | :-- |
@@ -68,15 +102,17 @@ A coleção está em [`postman/scene-api.postman_collection.json`](postman/scene
 
 ## Dados iniciais
 
-O H2 é **em memória**: os dados somem ao encerrar a aplicação. Por isso, ao subir (e somente se ainda não houver nenhum artista), a classe `DataLoader` cadastra automaticamente:
+O H2 é **em memória**: os dados somem ao encerrar a aplicação. Por isso, ao subir — e somente se ainda não houver nenhum artista —, a classe `DataLoader` cadastra automaticamente:
 
-- 6 artistas: Bring Me the Horizon, Title Fight, Asking Alexandria, blessthefall, Alesana, I Promised The World;
-- 5 perfis (o de *I Promised The World* fica de fora de propósito, para dar para testar o `POST /artist-profiles` e o `404` por artista);
-- 8 álbuns, incluindo um EP sem faixas (serve para testar a consulta por formato);
-- 82 faixas, com número e duração;
-- 4 playlists, ligando faixas de álbuns diferentes (relação N:N): *Heavy Rotation* (PUBLIC), *Treino Pesado* (PRIVATE), *Curtas e Grossas* (PUBLIC), *Madrugada* (PRIVATE).
+| Quantidade | O quê | Observação |
+| --: | :-- | :-- |
+| 6 | artistas | Bring Me the Horizon, Title Fight, Asking Alexandria, blessthefall, Alesana e I Promised the World |
+| 5 | perfis | o de *I Promised the World* fica de fora de propósito, para dar para testar o `POST /artist-profiles` e o `404` por artista |
+| 8 | álbuns | inclui um EP sem faixas, que serve para testar a consulta por formato |
+| 82 | faixas | com número e duração |
+| 4 | playlists | *Heavy Rotation* (PUBLIC), *Treino Pesado* (PRIVATE), *Curtas e Grossas* (PUBLIC) e *Madrugada* (PRIVATE), ligando faixas de álbuns diferentes |
 
-Gravadoras, sites e Instagram foram conferidos em fontes públicas (Wikipedia e sites oficiais). O que não foi confirmado fica `null`, porque `label`, `website` e `instagram` são campos opcionais.
+Os artistas saem do perfil do autor no Last.fm. Gravadoras, sites e Instagram foram conferidos em fontes públicas (Wikipedia e sites oficiais); o que não foi confirmado fica `null`, porque `label`, `website` e `instagram` são campos opcionais.
 
 ## Modelo de dados
 
@@ -133,100 +169,42 @@ erDiagram
 | `Track` | Faixa de um álbum | N:1 com `Album`; N:N com `Playlist` |
 | `Playlist` | Lista de faixas de qualquer artista ou álbum | N:N com `Track` (tabela `playlist_tracks`) |
 
-Enums: `Genre` (`ROCK`, `ALTERNATIVE`, `PUNK`, `EMO`, `POST_HARDCORE`, `METALCORE`, `METAL`, `POP`, `HIP_HOP`, `ELECTRONIC`, `JAZZ`, `FOLK`, `CLASSICAL`, `OTHER`), `AlbumType` (`ALBUM`, `EP`, `SINGLE`, `COMPILATION`, `LIVE`), `Visibility` (`PUBLIC`, `PRIVATE`).
+**Enums:** `Genre` (`ROCK`, `ALTERNATIVE`, `PUNK`, `EMO`, `POST_HARDCORE`, `METALCORE`, `METAL`, `POP`, `HIP_HOP`, `ELECTRONIC`, `JAZZ`, `FOLK`, `CLASSICAL`, `OTHER`) · `AlbumType` (`ALBUM`, `EP`, `SINGLE`, `COMPILATION`, `LIVE`) · `Visibility` (`PUBLIC`, `PRIVATE`).
 
 ### Decisões e limitações do modelo
 
-O modelo é uma simplificação de propósito: cobre os três tipos de relacionamento do enunciado sem complicar a API. O que ele não representa:
+O modelo é uma simplificação de propósito: cobre os três tipos de relacionamento do enunciado sem complicar a API. O que ele **não** representa:
 
 - **Álbum com vários artistas.** Cada álbum pertence a um artista. Colaborações, splits e coletâneas de "vários artistas" exigiriam um N:N entre `Album` e `Artist`, com uma tabela de ligação.
 - **Participações especiais (feat.).** A faixa não tem artistas próprios; ela pertence ao álbum e, por ele, a um artista. Representar participações exigiria um N:N entre `Track` e `Artist`.
 - **A mesma música em mais de um lançamento.** `Track` é a faixa dentro de um álbum, EP ou single, como nos serviços de streaming, em que cada lançamento lista as suas próprias faixas. Uma música lançada como single e depois no álbum vira duas faixas, uma em cada lançamento. Um modelo mais completo separaria a música (a gravação) da faixa no lançamento.
 - **Artistas históricos.** `formedYear` aceita de 1000 a 2100, para caberem, por exemplo, compositores clássicos; em artista solo, vale o ano de início da carreira.
 
-### Consultas úteis no Console do H2
-
-As tabelas guardam apenas a **chave estrangeira** (por exemplo, `tracks.album_id`), nunca uma cópia do nome do outro lado: assim o título de um álbum existe em um único lugar e não fica desatualizado. A API já devolve os nomes nas respostas (`albumTitle`, `artistName`); no banco, os nomes aparecem com um `JOIN`. A tabela `playlist_tracks` é só a tabela de ligação do N:N, com `playlist_id` e `track_id`.
-
-Faixas com o álbum e o artista:
-
-```sql
-SELECT t.id, t.track_number, t.title AS faixa, a.title AS album, ar.name AS artista
-FROM tracks t
-JOIN albums a ON a.id = t.album_id
-JOIN artists ar ON ar.id = a.artist_id
-ORDER BY a.id, t.track_number;
-```
-
-Playlists com o nome das faixas:
-
-```sql
-SELECT p.id AS playlist_id, p.name AS playlist, t.title AS faixa, a.title AS album, ar.name AS artista
-FROM playlist_tracks pt
-JOIN playlists p ON p.id = pt.playlist_id
-JOIN tracks t ON t.id = pt.track_id
-JOIN albums a ON a.id = t.album_id
-JOIN artists ar ON ar.id = a.artist_id
-ORDER BY p.id, t.id;
-```
-
-Perfis com o nome do artista, e artistas que ainda não têm perfil (a relação 1:1 é opcional):
-
-```sql
-SELECT ar.name AS artista, pr.hometown, pr.website, pr.instagram
-FROM artist_profiles pr
-JOIN artists ar ON ar.id = pr.artist_id;
-
-SELECT ar.id, ar.name
-FROM artists ar
-LEFT JOIN artist_profiles pr ON pr.artist_id = ar.id
-WHERE pr.id IS NULL;
-```
-
-Álbuns com a gravadora e a quantidade de faixas de cada um:
-
-```sql
-SELECT a.id, a.title AS album, a.release_year AS ano, COALESCE(a.record_label, '(sem gravadora)') AS gravadora,
-       COUNT(t.id) AS faixas
-FROM albums a
-LEFT JOIN tracks t ON t.album_id = a.id
-GROUP BY a.id, a.title, a.release_year, a.record_label
-ORDER BY a.id;
-```
-
-### Regras de validação
-
-As mesmas regras valem na entrada (DTOs `*Request`) e nas entidades (Bean Validation). Textos são aparados (`trim`) antes de validar.
-
-| Entidade | Campo | Regra |
-| :-- | :-- | :-- |
-| `Artist` | `name` | obrigatório; 2 a 100 caracteres; ao menos uma letra; único (sem diferenciar maiúsculas de minúsculas) |
-| `Artist` | `genre` | obrigatório; enum `Genre` |
-| `Artist` | `country` | opcional; 2 a 60 caracteres; somente letras, espaços e `. , ' -` |
-| `Artist` | `formedYear` | opcional; de 1000 a 2100 (cabem artistas históricos, como compositores clássicos) |
-| `ArtistProfile` | `artistId` | obrigatório; o artista precisa existir e ainda não ter perfil (1:1); não muda depois de criado |
-| `ArtistProfile` | `biography` | obrigatório; 10 a 1000 caracteres |
-| `ArtistProfile` | `hometown` | opcional; 2 a 100 caracteres; somente letras, espaços e `. , ' -` |
-| `ArtistProfile` | `website` | opcional; até 200 caracteres; começa com `http://` ou `https://` |
-| `ArtistProfile` | `instagram` | opcional; até 30 caracteres entre letras, números, `.` e `_` (sem o `@`) |
-| `Album` | `artistId` | obrigatório; o artista precisa existir |
-| `Album` | `title` | obrigatório; 1 a 150 caracteres; títulos numéricos como `1989` valem; único dentro do artista |
-| `Album` | `releaseYear` | obrigatório; de 1900 a 2100 |
-| `Album` | `type` | obrigatório; enum `AlbumType` |
-| `Album` | `label` | opcional; 2 a 100 caracteres; ao menos uma letra |
-| `Track` | `albumId` | obrigatório; o álbum precisa existir |
-| `Track` | `title` | obrigatório; 1 a 150 caracteres; títulos numéricos como `27` valem |
-| `Track` | `trackNumber` | obrigatório; de 1 a 99; único dentro do álbum |
-| `Track` | `durationSeconds` | opcional; de 1 a 7200 |
-| `Playlist` | `name` | obrigatório; 2 a 100 caracteres; ao menos uma letra; único (sem diferenciar maiúsculas de minúsculas) |
-| `Playlist` | `description` | opcional; até 255 caracteres |
-| `Playlist` | `visibility` | obrigatório; enum `Visibility` |
-
 ## Convenções da API
 
-### Paginação
+### Paginação e ordenação
 
-Todas as listagens (inclusive as buscas e as consultas por relação) são paginadas e aceitam os mesmos parâmetros de query: `page` (começa em 0), `size` (padrão 10, máximo 50) e `sort` (ex.: `sort=name,asc`). Um campo de ordenação que não existe devolve `400`.
+Todas as listagens — inclusive as buscas e as consultas por relação — são paginadas e aceitam os mesmos parâmetros de query:
+
+| Parâmetro | Tipo | Descrição |
+| :-- | :-- | :-- |
+| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
+| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
+| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=name,asc` |
+
+Os campos aceitos em `sort` são os do recurso **devolvido** pelo endpoint:
+
+| Recurso devolvido | Campos de ordenação |
+| :-- | :-- |
+| `Artist` | `id`, `name`, `genre`, `country`, `formedYear` |
+| `ArtistProfile` | `id`, `hometown`, `website`, `instagram` |
+| `Album` | `id`, `title`, `releaseYear`, `type`, `label` |
+| `Track` | `id`, `title`, `trackNumber`, `durationSeconds` |
+| `Playlist` | `id`, `name`, `description`, `visibility` |
+
+Um campo de ordenação que não existe devolve `400`.
+
+> Nos dois endpoints que atravessam o N:N, valem os campos do recurso devolvido, e não os do recurso do caminho: `GET /playlists/{id}/tracks` devolve faixas, então ordena por campos de `Track`; `GET /tracks/{id}/playlists` devolve playlists, então ordena por campos de `Playlist`.
 
 ### Listas vazias, remoções e valores inválidos
 
@@ -237,7 +215,7 @@ Todas as listagens (inclusive as buscas e as consultas por relação) são pagin
 
 ### Links HATEOAS
 
-Cada recurso traz `_links` com `self`, `update` e `delete`, a coleção e os recursos relacionados. As listagens vêm em `PagedModel` (itens em `_embedded`, mais `_links` de navegação e o bloco `page`). Exemplo (formato):
+Cada recurso traz `_links` com `self`, `update` e `delete`, a coleção e os recursos relacionados. As listagens vêm em `PagedModel` (itens em `_embedded`, mais `_links` de navegação e o bloco `page`).
 
 ```json
 {
@@ -259,7 +237,7 @@ Cada recurso traz `_links` com `self`, `update` e `delete`, a coleção e os rec
 
 ### Erros
 
-Todo erro tem o mesmo corpo (`details` só vem preenchida nos erros de validação):
+Todo erro tem o mesmo corpo; `details` só vem preenchida nos erros de validação:
 
 ```json
 {
@@ -300,94 +278,58 @@ Erro de validação, campo a campo:
 | `415 Unsupported Media Type` | Corpo enviado com um Content-Type diferente de `application/json` |
 | `500 Internal Server Error` | Só para falhas inesperadas, com mensagem genérica (nenhum dos casos acima chega aqui) |
 
+## Regras de validação
+
+As mesmas regras valem na entrada (DTOs `*Request`) e nas entidades (Bean Validation). Textos são aparados (`trim`) antes de validar.
+
+<details>
+<summary><b>Tabela completa de validações</b></summary>
+
+| Entidade | Campo | Regra |
+| :-- | :-- | :-- |
+| `Artist` | `name` | obrigatório; 2 a 100 caracteres; ao menos uma letra; único (sem diferenciar maiúsculas de minúsculas) |
+| `Artist` | `genre` | obrigatório; enum `Genre` |
+| `Artist` | `country` | opcional; 2 a 60 caracteres; somente letras, espaços e `. , ' -` |
+| `Artist` | `formedYear` | opcional; de 1000 a 2100 (cabem artistas históricos, como compositores clássicos) |
+| `ArtistProfile` | `artistId` | obrigatório; o artista precisa existir e ainda não ter perfil (1:1); não muda depois de criado |
+| `ArtistProfile` | `biography` | obrigatório; 10 a 1000 caracteres |
+| `ArtistProfile` | `hometown` | opcional; 2 a 100 caracteres; somente letras, espaços e `. , ' -` |
+| `ArtistProfile` | `website` | opcional; até 200 caracteres; começa com `http://` ou `https://` |
+| `ArtistProfile` | `instagram` | opcional; até 30 caracteres entre letras, números, `.` e `_` (sem o `@`) |
+| `Album` | `artistId` | obrigatório; o artista precisa existir |
+| `Album` | `title` | obrigatório; 1 a 150 caracteres; títulos numéricos como `1989` valem; único dentro do artista |
+| `Album` | `releaseYear` | obrigatório; de 1900 a 2100 |
+| `Album` | `type` | obrigatório; enum `AlbumType` |
+| `Album` | `label` | opcional; 2 a 100 caracteres; ao menos uma letra |
+| `Track` | `albumId` | obrigatório; o álbum precisa existir |
+| `Track` | `title` | obrigatório; 1 a 150 caracteres; títulos numéricos como `27` valem |
+| `Track` | `trackNumber` | obrigatório; de 1 a 99; único dentro do álbum |
+| `Track` | `durationSeconds` | opcional; de 1 a 7200 |
+| `Playlist` | `name` | obrigatório; 2 a 100 caracteres; ao menos uma letra; único (sem diferenciar maiúsculas de minúsculas) |
+| `Playlist` | `description` | opcional; até 255 caracteres |
+| `Playlist` | `visibility` | obrigatório; enum `Visibility` |
+
+</details>
+
 ## API Reference
 
-São **40 endpoints**, em 5 grupos. A descrição completa de cada um (com exemplos de resposta de cada status) está no Swagger UI.
+São **40 endpoints**, em 5 grupos. A descrição completa de cada um, com exemplos de resposta de cada status, está no **Swagger UI**. Todas as listagens aceitam `page`, `size` e `sort` ([convenções](#paginação-e-ordenação)).
 
-### Artists
+<details>
+<summary><b>Artists</b> — 7 endpoints · cadastro de artistas e bandas</summary>
 
-Cadastro de artistas e bandas. Um artista tem vários álbuns (relação 1:N) e no máximo um perfil (relação 1:1).
+Um artista tem vários álbuns (1:N) e no máximo um perfil (1:1).
 
-#### Get all artists
+Campos de ordenação: `id`, `name`, `genre`, `country`, `formedYear`.
 
-```http
-  GET /artists
-```
+#### Corpo da requisição (usado no `POST` e no `PUT`)
 
-Retorna uma página com os artistas cadastrados.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=name,asc`. Campos: `id`, `name`, `genre`, `country`, `formedYear` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Search artists by name
-
-```http
-  GET /artists/search?name=${name}
-```
-
-Consulta personalizada: retorna os artistas cujo nome contém o texto informado, sem diferenciar maiúsculas de minúsculas. Ex.: name=bring encontra 'Bring Me the Horizon'.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `name` | `string` | **Required**. Parte do nome do artista (de 1 a 100 caracteres). Ex.: `bring` |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=name,asc`. Campos: `id`, `name`, `genre`, `country`, `formedYear` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Get artists by genre
-
-```http
-  GET /artists/by-genre/${genre}
-```
-
-Consulta personalizada: retorna os artistas do gênero informado. Valores aceitos: ROCK, ALTERNATIVE, PUNK, EMO, POST_HARDCORE, METALCORE, METAL, POP, HIP_HOP, ELECTRONIC, JAZZ, FOLK, CLASSICAL, OTHER.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `genre` | `string` | **Required**. Gênero musical. Valores: `ROCK`, `ALTERNATIVE`, `PUNK`, `EMO`, `POST_HARDCORE`, `METALCORE`, `METAL`, `POP`, `HIP_HOP`, `ELECTRONIC`, `JAZZ`, `FOLK`, `CLASSICAL`, `OTHER` |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=name,asc`. Campos: `id`, `name`, `genre`, `country`, `formedYear` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Get a specific artist
-
-```http
-  GET /artists/${id}
-```
-
-Retorna os dados de um único artista a partir do seu identificador, com links para álbuns e perfil.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id do artista. Ex.: `1` |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found
-
-#### Create an artist
-
-```http
-  POST /artists
-```
-
-Cria um artista. Nome (2 a 100 caracteres, único) e gênero são obrigatórios; país (somente letras) e ano de formação (1000 a 2100) são opcionais.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `name` | `string` | **Required**. Nome do artista ou banda (único, sem diferenciar maiúsculas de minúsculas). De 2 a 100 caracteres, com ao menos uma letra; aceita números e pontuação comum. |
-| `genre` | `string` | **Required**. Gênero principal. Valores aceitos: ROCK, ALTERNATIVE, PUNK, EMO, POST_HARDCORE, METALCORE, METAL, POP, HIP_HOP, ELECTRONIC, JAZZ, FOLK, CLASSICAL, OTHER |
-| `country` | `string` | País de origem (opcional). De 2 a 60 caracteres, somente letras, espaços e os símbolos . , ' - (números não são aceitos). |
-| `formedYear` | `integer` | Ano de formação da banda ou, em artista solo, de início da carreira (opcional). De 1000 a 2100, para aceitar também artistas históricos, como compositores clássicos. |
-
-Exemplo de corpo:
+| Campo | Tipo | Descrição |
+| :-- | :-- | :-- |
+| `name` | `string` | **Obrigatório.** Nome do artista ou banda (único, sem diferenciar maiúsculas de minúsculas). De 2 a 100 caracteres, com ao menos uma letra; aceita números e pontuação comum. |
+| `genre` | `string` | **Obrigatório.** Gênero principal. Valores: `ROCK`, `ALTERNATIVE`, `PUNK`, `EMO`, `POST_HARDCORE`, `METALCORE`, `METAL`, `POP`, `HIP_HOP`, `ELECTRONIC`, `JAZZ`, `FOLK`, `CLASSICAL`, `OTHER` |
+| `country` | `string` | Opcional. De 2 a 60 caracteres, somente letras, espaços e `. , ' -` (números não são aceitos). |
+| `formedYear` | `integer` | Opcional. Ano de formação da banda ou, em artista solo, de início da carreira. De 1000 a 2100. |
 
 ```json
 {
@@ -398,122 +340,61 @@ Exemplo de corpo:
 }
 ```
 
-**Status:** `201` Created · `400` Bad Request · `409` Conflict
-
-#### Update an artist
+---
 
 ```http
-  PUT /artists/${id}
+GET /artists
 ```
-
-Substitui todos os dados de um artista existente. As mesmas regras de validação do cadastro se aplicam.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id do artista a atualizar. Ex.: `1` |
-| `name` | `string` | **Required**. Nome do artista ou banda (único, sem diferenciar maiúsculas de minúsculas). De 2 a 100 caracteres, com ao menos uma letra; aceita números e pontuação comum. |
-| `genre` | `string` | **Required**. Gênero principal. Valores aceitos: ROCK, ALTERNATIVE, PUNK, EMO, POST_HARDCORE, METALCORE, METAL, POP, HIP_HOP, ELECTRONIC, JAZZ, FOLK, CLASSICAL, OTHER |
-| `country` | `string` | País de origem (opcional). De 2 a 60 caracteres, somente letras, espaços e os símbolos . , ' - (números não são aceitos). |
-| `formedYear` | `integer` | Ano de formação da banda ou, em artista solo, de início da carreira (opcional). De 1000 a 2100, para aceitar também artistas históricos, como compositores clássicos. |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found · `409` Conflict
-
-#### Delete an artist
+Retorna uma página com os artistas cadastrados. · `200` · `400`
 
 ```http
-  DELETE /artists/${id}
+GET /artists/search?name=${name}
 ```
-
-Exclui o artista junto com o perfil, os álbuns e as faixas dele. As faixas também saem de todas as playlists.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id do artista a remover. Ex.: `1` |
-
-**Status:** `204` No Content · `400` Bad Request · `404` Not Found
-
-### Artist Profiles
-
-Perfil detalhado de um artista (biografia, cidade natal, site e Instagram). Relação 1:1: cada artista tem no máximo um perfil.
-
-#### Get all artist profiles
+Consulta personalizada: artistas cujo nome contém o texto informado, sem diferenciar maiúsculas de minúsculas (ex.: `name=bring` encontra "Bring Me the Horizon"). O parâmetro `name` é **obrigatório**, de 1 a 100 caracteres. · `200` · `400`
 
 ```http
-  GET /artist-profiles
+GET /artists/by-genre/${genre}
 ```
-
-Retorna uma página com os perfis cadastrados.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=hometown,asc`. Campos: `id`, `hometown`, `website`, `instagram` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Search artist profiles by hometown
+Consulta personalizada: artistas do gênero informado (valores do enum `Genre`). · `200` · `400`
 
 ```http
-  GET /artist-profiles/search?hometown=${hometown}
+GET /artists/${id}
 ```
-
-Consulta personalizada: retorna os perfis cuja cidade natal contém o texto informado, sem diferenciar maiúsculas de minúsculas. Ex.: hometown=england encontra 'Sheffield, England' e 'York, England'.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `hometown` | `string` | **Required**. Parte da cidade natal (de 1 a 100 caracteres). Ex.: `england` |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=hometown,asc`. Campos: `id`, `hometown`, `website`, `instagram` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Get the profile of an artist
+Dados de um único artista, com links para álbuns e perfil. · `200` · `400` · `404`
 
 ```http
-  GET /artist-profiles/by-artist/${artistId}
+POST /artists
 ```
-
-Consulta personalizada: retorna o perfil do artista cujo id foi informado (relação 1:1).
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `artistId` | `integer` | **Required**. Id do artista dono do perfil. Ex.: `1` |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found
-
-#### Get a specific artist profile
+Cria um artista. · `201` · `400` · `409`
 
 ```http
-  GET /artist-profiles/${id}
+PUT /artists/${id}
 ```
-
-Retorna os dados de um único perfil a partir do seu identificador.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id do perfil. Ex.: `1` |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found
-
-#### Create an artist profile
+Substitui todos os dados de um artista existente; mesmas regras do cadastro. · `200` · `400` · `404` · `409`
 
 ```http
-  POST /artist-profiles
+DELETE /artists/${id}
 ```
+Exclui o artista junto com o perfil, os álbuns e as faixas dele. As faixas também saem de todas as playlists. · `204` · `400` · `404`
 
-Cria o perfil de um artista que ainda não tem um. Obrigatórios: artistId (o artista precisa existir) e biography (10 a 1000 caracteres). Opcionais: hometown (somente letras), website (http:// ou https://) e instagram (sem o @).
+</details>
 
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `artistId` | `integer` | **Required**. Id do artista dono do perfil. O artista precisa existir e ainda não ter perfil; depois de criado, o perfil não pode mudar de artista. |
-| `biography` | `string` | **Required**. Biografia do artista, de 10 a 1000 caracteres |
-| `hometown` | `string` | Cidade natal (opcional). De 2 a 100 caracteres, somente letras, espaços e os símbolos . , ' - (números não são aceitos). |
-| `website` | `string` | Site oficial (opcional). Precisa começar com http:// ou https://; até 200 caracteres. |
-| `instagram` | `string` | Usuário do Instagram, sem o @ (opcional). Até 30 caracteres: letras, números, ponto e underline. |
+<details>
+<summary><b>Artist Profiles</b> — 7 endpoints · perfil detalhado do artista (1:1)</summary>
 
-Exemplo de corpo:
+Biografia, cidade natal, site e Instagram. Cada artista tem no máximo um perfil.
+
+Campos de ordenação: `id`, `hometown`, `website`, `instagram`.
+
+#### Corpo da requisição (usado no `POST` e no `PUT`)
+
+| Campo | Tipo | Descrição |
+| :-- | :-- | :-- |
+| `artistId` | `integer` | **Obrigatório.** Id do artista dono do perfil. O artista precisa existir e ainda não ter perfil; depois de criado, o perfil não muda de artista. |
+| `biography` | `string` | **Obrigatório.** De 10 a 1000 caracteres. |
+| `hometown` | `string` | Opcional. De 2 a 100 caracteres, somente letras, espaços e `. , ' -`. |
+| `website` | `string` | Opcional. Precisa começar com `http://` ou `https://`; até 200 caracteres. |
+| `instagram` | `string` | Opcional. Usuário sem o `@`, até 30 caracteres: letras, números, ponto e underline. |
 
 ```json
 {
@@ -525,143 +406,61 @@ Exemplo de corpo:
 }
 ```
 
-**Status:** `201` Created · `400` Bad Request · `404` Not Found · `409` Conflict
-
-#### Update an artist profile
+---
 
 ```http
-  PUT /artist-profiles/${id}
+GET /artist-profiles
 ```
-
-Substitui os dados de um perfil existente. O artistId enviado precisa ser o mesmo do perfil: um perfil não muda de artista.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id do perfil a atualizar. Ex.: `1` |
-| `artistId` | `integer` | **Required**. Id do artista dono do perfil. O artista precisa existir e ainda não ter perfil; depois de criado, o perfil não pode mudar de artista. |
-| `biography` | `string` | **Required**. Biografia do artista, de 10 a 1000 caracteres |
-| `hometown` | `string` | Cidade natal (opcional). De 2 a 100 caracteres, somente letras, espaços e os símbolos . , ' - (números não são aceitos). |
-| `website` | `string` | Site oficial (opcional). Precisa começar com http:// ou https://; até 200 caracteres. |
-| `instagram` | `string` | Usuário do Instagram, sem o @ (opcional). Até 30 caracteres: letras, números, ponto e underline. |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found
-
-#### Delete an artist profile
+Retorna uma página com os perfis cadastrados. · `200` · `400`
 
 ```http
-  DELETE /artist-profiles/${id}
+GET /artist-profiles/search?hometown=${hometown}
 ```
-
-Exclui o perfil. O artista continua cadastrado e pode receber um novo perfil depois.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id do perfil a remover. Ex.: `1` |
-
-**Status:** `204` No Content · `400` Bad Request · `404` Not Found
-
-### Albums
-
-Cadastro de álbuns, EPs, singles, coletâneas e shows ao vivo. Cada álbum pertence a um artista (N:1) e tem várias faixas (1:N).
-
-#### Get all albums
+Consulta personalizada: perfis cuja cidade natal contém o texto informado (ex.: `hometown=england` encontra "Sheffield, England" e "York, England"). O parâmetro é **obrigatório**, de 1 a 100 caracteres. · `200` · `400`
 
 ```http
-  GET /albums
+GET /artist-profiles/by-artist/${artistId}
 ```
-
-Retorna uma página com os álbuns cadastrados.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=title,asc`. Campos: `id`, `title`, `releaseYear`, `type`, `label` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Search albums by title
+Consulta personalizada: o perfil do artista informado (relação 1:1). · `200` · `400` · `404`
 
 ```http
-  GET /albums/search?title=${title}
+GET /artist-profiles/${id}
 ```
-
-Consulta personalizada: retorna os álbuns cujo título contém o texto informado, sem diferenciar maiúsculas de minúsculas. Ex.: title=scream encontra 'Stand Up and Scream'.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `title` | `string` | **Required**. Parte do título do álbum (de 1 a 150 caracteres). Ex.: `scream` |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=title,asc`. Campos: `id`, `title`, `releaseYear`, `type`, `label` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Get albums of an artist
+Dados de um único perfil. · `200` · `400` · `404`
 
 ```http
-  GET /albums/by-artist/${artistId}
+POST /artist-profiles
 ```
-
-Consulta personalizada: retorna os álbuns do artista informado (relação 1:N).
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `artistId` | `integer` | **Required**. Id do artista. Ex.: `1` |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=title,asc`. Campos: `id`, `title`, `releaseYear`, `type`, `label` |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found
-
-#### Get albums by type
+Cria o perfil de um artista que ainda não tem um. · `201` · `400` · `404` · `409`
 
 ```http
-  GET /albums/by-type/${type}
+PUT /artist-profiles/${id}
 ```
-
-Consulta personalizada: retorna os álbuns do formato informado. Valores aceitos: ALBUM, EP, SINGLE, COMPILATION, LIVE.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `type` | `string` | **Required**. Formato do lançamento. Valores: `ALBUM`, `EP`, `SINGLE`, `COMPILATION`, `LIVE` |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=title,asc`. Campos: `id`, `title`, `releaseYear`, `type`, `label` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Get a specific album
+Substitui os dados de um perfil existente. O `artistId` enviado precisa ser o mesmo do perfil. · `200` · `400` · `404`
 
 ```http
-  GET /albums/${id}
+DELETE /artist-profiles/${id}
 ```
+Exclui o perfil. O artista continua cadastrado e pode receber um novo perfil depois. · `204` · `400` · `404`
 
-Retorna os dados de um único álbum a partir do seu identificador, com links para o artista e as faixas.
+</details>
 
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id do álbum. Ex.: `1` |
+<details>
+<summary><b>Albums</b> — 8 endpoints · álbuns, EPs, singles, coletâneas e shows ao vivo</summary>
 
-**Status:** `200` OK · `400` Bad Request · `404` Not Found
+Cada álbum pertence a um artista (N:1) e tem várias faixas (1:N).
 
-#### Create an album
+Campos de ordenação: `id`, `title`, `releaseYear`, `type`, `label`.
 
-```http
-  POST /albums
-```
+#### Corpo da requisição (usado no `POST` e no `PUT`)
 
-Cria um álbum para um artista existente. Obrigatórios: artistId, title (1 a 150 caracteres, único dentro do artista), releaseYear (1900 a 2100) e type. Opcional: label (gravadora).
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `artistId` | `integer` | **Required**. Id do artista dono do álbum (o artista precisa existir) |
-| `title` | `string` | **Required**. Título do álbum. De 1 a 150 caracteres: letras, números, espaços e pontuação comum (títulos numéricos como "1989" são válidos). Não pode repetir dentro do mesmo artista. |
-| `releaseYear` | `integer` | **Required**. Ano de lançamento, de 1900 a 2100 |
-| `type` | `string` | **Required**. Formato do lançamento. Valores aceitos: ALBUM, EP, SINGLE, COMPILATION, LIVE |
+| Campo | Tipo | Descrição |
+| :-- | :-- | :-- |
+| `artistId` | `integer` | **Obrigatório.** Id do artista dono do álbum (o artista precisa existir). |
+| `title` | `string` | **Obrigatório.** De 1 a 150 caracteres: letras, números, espaços e pontuação comum (títulos numéricos como "1989" são válidos). Não pode repetir dentro do mesmo artista. |
+| `releaseYear` | `integer` | **Obrigatório.** De 1900 a 2100. |
+| `type` | `string` | **Obrigatório.** Valores: `ALBUM`, `EP`, `SINGLE`, `COMPILATION`, `LIVE`. |
 | `label` | `string` | Gravadora (opcional). De 2 a 100 caracteres, com ao menos uma letra. |
-
-Exemplo de corpo:
 
 ```json
 {
@@ -673,142 +472,65 @@ Exemplo de corpo:
 }
 ```
 
-**Status:** `201` Created · `400` Bad Request · `404` Not Found · `409` Conflict
-
-#### Update an album
+---
 
 ```http
-  PUT /albums/${id}
+GET /albums
 ```
-
-Substitui todos os dados de um álbum existente (inclusive o artista dono). As mesmas regras de validação do cadastro se aplicam.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id do álbum a atualizar. Ex.: `1` |
-| `artistId` | `integer` | **Required**. Id do artista dono do álbum (o artista precisa existir) |
-| `title` | `string` | **Required**. Título do álbum. De 1 a 150 caracteres: letras, números, espaços e pontuação comum (títulos numéricos como "1989" são válidos). Não pode repetir dentro do mesmo artista. |
-| `releaseYear` | `integer` | **Required**. Ano de lançamento, de 1900 a 2100 |
-| `type` | `string` | **Required**. Formato do lançamento. Valores aceitos: ALBUM, EP, SINGLE, COMPILATION, LIVE |
-| `label` | `string` | Gravadora (opcional). De 2 a 100 caracteres, com ao menos uma letra. |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found · `409` Conflict
-
-#### Delete an album
+Retorna uma página com os álbuns cadastrados. · `200` · `400`
 
 ```http
-  DELETE /albums/${id}
+GET /albums/search?title=${title}
 ```
-
-Exclui o álbum junto com as faixas dele. As faixas também saem de todas as playlists.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id do álbum a remover. Ex.: `1` |
-
-**Status:** `204` No Content · `400` Bad Request · `404` Not Found
-
-### Tracks
-
-Cadastro de faixas. Cada faixa pertence a um álbum (N:1) e pode estar em várias playlists (N:N).
-
-#### Get all tracks
+Consulta personalizada: álbuns cujo título contém o texto informado (ex.: `title=scream` encontra "Stand Up and Scream"). O parâmetro é **obrigatório**, de 1 a 150 caracteres. · `200` · `400`
 
 ```http
-  GET /tracks
+GET /albums/by-artist/${artistId}
 ```
-
-Retorna uma página com as faixas cadastradas.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=title,asc`. Campos: `id`, `title`, `trackNumber`, `durationSeconds` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Search tracks by title
+Consulta personalizada: os álbuns do artista informado (relação 1:N). · `200` · `400` · `404`
 
 ```http
-  GET /tracks/search?title=${title}
+GET /albums/by-type/${type}
 ```
-
-Consulta personalizada: retorna as faixas cujo título contém o texto informado, sem diferenciar maiúsculas de minúsculas. Ex.: title=heart encontra 'Can You Feel My Heart'.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `title` | `string` | **Required**. Parte do título da faixa (de 1 a 150 caracteres). Ex.: `heart` |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=title,asc`. Campos: `id`, `title`, `trackNumber`, `durationSeconds` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Get tracks of an album
+Consulta personalizada: os álbuns do formato informado (enum `AlbumType`). · `200` · `400`
 
 ```http
-  GET /tracks/by-album/${albumId}
+GET /albums/${id}
 ```
-
-Consulta personalizada: retorna as faixas do álbum informado (relação 1:N). Use sort=trackNumber,asc para a ordem do disco.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `albumId` | `integer` | **Required**. Id do álbum. Ex.: `1` |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=title,asc`. Campos: `id`, `title`, `trackNumber`, `durationSeconds` |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found
-
-#### Get playlists of a track
+Dados de um único álbum, com links para o artista e as faixas. · `200` · `400` · `404`
 
 ```http
-  GET /tracks/${id}/playlists
+POST /albums
 ```
-
-Consulta personalizada: retorna as playlists em que a faixa informada aparece (relação N:N).
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id da faixa. Ex.: `1` |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=title,asc`. Campos: `id`, `title`, `trackNumber`, `durationSeconds` |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found
-
-#### Get a specific track
+Cria um álbum para um artista existente. · `201` · `400` · `404` · `409`
 
 ```http
-  GET /tracks/${id}
+PUT /albums/${id}
 ```
-
-Retorna os dados de uma única faixa a partir do seu identificador, com links para o álbum e as playlists.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id da faixa. Ex.: `1` |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found
-
-#### Create a track
+Substitui todos os dados de um álbum existente, inclusive o artista dono. · `200` · `400` · `404` · `409`
 
 ```http
-  POST /tracks
+DELETE /albums/${id}
 ```
+Exclui o álbum junto com as faixas dele. As faixas também saem de todas as playlists. · `204` · `400` · `404`
 
-Cria uma faixa em um álbum existente. Obrigatórios: albumId, title (1 a 150 caracteres) e trackNumber (1 a 99, único dentro do álbum). Opcional: durationSeconds (1 a 7200).
+</details>
 
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `albumId` | `integer` | **Required**. Id do álbum da faixa (o álbum precisa existir) |
-| `title` | `string` | **Required**. Título da faixa. De 1 a 150 caracteres: letras, números, espaços e pontuação comum (títulos numéricos como "27" são válidos). |
-| `trackNumber` | `integer` | **Required**. Número da faixa dentro do álbum, de 1 a 99. Não pode repetir dentro do mesmo álbum. |
-| `durationSeconds` | `integer` | Duração em segundos (opcional), de 1 a 7200 |
+<details>
+<summary><b>Tracks</b> — 8 endpoints · faixas dos álbuns</summary>
 
-Exemplo de corpo:
+Cada faixa pertence a um álbum (N:1) e pode estar em várias playlists (N:N).
+
+Campos de ordenação: `id`, `title`, `trackNumber`, `durationSeconds`.
+
+#### Corpo da requisição (usado no `POST` e no `PUT`)
+
+| Campo | Tipo | Descrição |
+| :-- | :-- | :-- |
+| `albumId` | `integer` | **Obrigatório.** Id do álbum da faixa (o álbum precisa existir). |
+| `title` | `string` | **Obrigatório.** De 1 a 150 caracteres: letras, números, espaços e pontuação comum (títulos numéricos como "27" são válidos). |
+| `trackNumber` | `integer` | **Obrigatório.** De 1 a 99. Não pode repetir dentro do mesmo álbum. |
+| `durationSeconds` | `integer` | Opcional. De 1 a 7200. |
 
 ```json
 {
@@ -819,140 +541,64 @@ Exemplo de corpo:
 }
 ```
 
-**Status:** `201` Created · `400` Bad Request · `404` Not Found · `409` Conflict
-
-#### Update a track
+---
 
 ```http
-  PUT /tracks/${id}
+GET /tracks
 ```
-
-Substitui todos os dados de uma faixa existente (inclusive o álbum). As mesmas regras de validação do cadastro se aplicam.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id da faixa a atualizar. Ex.: `1` |
-| `albumId` | `integer` | **Required**. Id do álbum da faixa (o álbum precisa existir) |
-| `title` | `string` | **Required**. Título da faixa. De 1 a 150 caracteres: letras, números, espaços e pontuação comum (títulos numéricos como "27" são válidos). |
-| `trackNumber` | `integer` | **Required**. Número da faixa dentro do álbum, de 1 a 99. Não pode repetir dentro do mesmo álbum. |
-| `durationSeconds` | `integer` | Duração em segundos (opcional), de 1 a 7200 |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found · `409` Conflict
-
-#### Delete a track
+Retorna uma página com as faixas cadastradas. · `200` · `400`
 
 ```http
-  DELETE /tracks/${id}
+GET /tracks/search?title=${title}
 ```
-
-Exclui a faixa e a tira de todas as playlists em que estava.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id da faixa a remover. Ex.: `1` |
-
-**Status:** `204` No Content · `400` Bad Request · `404` Not Found
-
-### Playlists
-
-Cadastro de playlists e das faixas que fazem parte de cada uma. Relação N:N: uma playlist tem várias faixas e uma faixa pode estar em várias playlists.
-
-#### Get all playlists
+Consulta personalizada: faixas cujo título contém o texto informado (ex.: `title=heart` encontra "Can You Feel My Heart"). O parâmetro é **obrigatório**, de 1 a 150 caracteres. · `200` · `400`
 
 ```http
-  GET /playlists
+GET /tracks/by-album/${albumId}
 ```
-
-Retorna uma página com as playlists cadastradas.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=name,asc`. Campos: `id`, `name`, `description`, `visibility` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Search playlists by name
+Consulta personalizada: as faixas do álbum informado (relação 1:N). Use `sort=trackNumber,asc` para a ordem do disco. · `200` · `400` · `404`
 
 ```http
-  GET /playlists/search?name=${name}
+GET /tracks/${id}/playlists
 ```
-
-Consulta personalizada: retorna as playlists cujo nome contém o texto informado, sem diferenciar maiúsculas de minúsculas. Ex.: name=rotation encontra 'Heavy Rotation'.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `name` | `string` | **Required**. Parte do nome da playlist (de 1 a 100 caracteres). Ex.: `rotation` |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=name,asc`. Campos: `id`, `name`, `description`, `visibility` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Get playlists by visibility
+Consulta personalizada: as playlists em que a faixa aparece (relação N:N). Devolve playlists, então ordena por `id`, `name`, `description` ou `visibility`. · `200` · `400` · `404`
 
 ```http
-  GET /playlists/by-visibility/${visibility}
+GET /tracks/${id}
 ```
-
-Consulta personalizada: retorna as playlists PUBLIC ou PRIVATE.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `visibility` | `string` | **Required**. Visibilidade da playlist. Valores: `PUBLIC`, `PRIVATE` |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=name,asc`. Campos: `id`, `name`, `description`, `visibility` |
-
-**Status:** `200` OK · `400` Bad Request
-
-#### Get tracks of a playlist
+Dados de uma única faixa, com links para o álbum e as playlists. · `200` · `400` · `404`
 
 ```http
-  GET /playlists/${id}/tracks
+POST /tracks
 ```
-
-Consulta personalizada: retorna as faixas que fazem parte da playlist informada (relação N:N).
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id da playlist. Ex.: `1` |
-| `page` | `integer` | Número da página, começando em 0 (padrão `0`) |
-| `size` | `integer` | Itens por página (padrão `10`, máximo `50`) |
-| `sort` | `string` | Ordenação no formato `campo,asc` ou `campo,desc`, ex.: `sort=name,asc`. Campos: `id`, `name`, `description`, `visibility` |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found
-
-#### Get a specific playlist
+Cria uma faixa em um álbum existente. · `201` · `400` · `404` · `409`
 
 ```http
-  GET /playlists/${id}
+PUT /tracks/${id}
 ```
-
-Retorna os dados de uma única playlist a partir do seu identificador, com a quantidade de faixas e o link para elas.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id da playlist. Ex.: `1` |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found
-
-#### Create a playlist
+Substitui todos os dados de uma faixa existente, inclusive o álbum. · `200` · `400` · `404` · `409`
 
 ```http
-  POST /playlists
+DELETE /tracks/${id}
 ```
+Exclui a faixa e a tira de todas as playlists em que estava. · `204` · `400` · `404`
 
-Cria uma playlist vazia. Nome (2 a 100 caracteres, único) e visibilidade são obrigatórios; descrição (até 255 caracteres) é opcional. Para colocar faixas nela, use POST /playlists/{playlistId}/tracks/{trackId}.
+</details>
 
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `name` | `string` | **Required**. Nome da playlist (único, sem diferenciar maiúsculas de minúsculas). De 2 a 100 caracteres, com ao menos uma letra; aceita números e pontuação comum. |
-| `description` | `string` | Descrição (opcional), até 255 caracteres |
-| `visibility` | `string` | **Required**. Quem pode ver a playlist. Valores aceitos: PUBLIC, PRIVATE |
+<details>
+<summary><b>Playlists</b> — 10 endpoints · playlists e as faixas de cada uma (N:N)</summary>
 
-Exemplo de corpo:
+Uma playlist tem várias faixas e uma faixa pode estar em várias playlists.
+
+Campos de ordenação: `id`, `name`, `description`, `visibility`.
+
+#### Corpo da requisição (usado no `POST` e no `PUT`)
+
+| Campo | Tipo | Descrição |
+| :-- | :-- | :-- |
+| `name` | `string` | **Obrigatório.** Nome da playlist (único, sem diferenciar maiúsculas de minúsculas). De 2 a 100 caracteres, com ao menos uma letra. |
+| `description` | `string` | Opcional. Até 255 caracteres. |
+| `visibility` | `string` | **Obrigatório.** Valores: `PUBLIC`, `PRIVATE`. |
 
 ```json
 {
@@ -962,68 +608,116 @@ Exemplo de corpo:
 }
 ```
 
-**Status:** `201` Created · `400` Bad Request · `409` Conflict
-
-#### Update a playlist
+---
 
 ```http
-  PUT /playlists/${id}
+GET /playlists
 ```
-
-Substitui nome, descrição e visibilidade de uma playlist existente. As faixas dela não mudam.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id da playlist a atualizar. Ex.: `1` |
-| `name` | `string` | **Required**. Nome da playlist (único, sem diferenciar maiúsculas de minúsculas). De 2 a 100 caracteres, com ao menos uma letra; aceita números e pontuação comum. |
-| `description` | `string` | Descrição (opcional), até 255 caracteres |
-| `visibility` | `string` | **Required**. Quem pode ver a playlist. Valores aceitos: PUBLIC, PRIVATE |
-
-**Status:** `200` OK · `400` Bad Request · `404` Not Found · `409` Conflict
-
-#### Delete a playlist
+Retorna uma página com as playlists cadastradas. · `200` · `400`
 
 ```http
-  DELETE /playlists/${id}
+GET /playlists/search?name=${name}
 ```
-
-Exclui a playlist. As faixas continuam cadastradas; só deixam de fazer parte dela.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `id` | `integer` | **Required**. Id da playlist a remover. Ex.: `1` |
-
-**Status:** `204` No Content · `400` Bad Request · `404` Not Found
-
-#### Add a track to a playlist
+Consulta personalizada: playlists cujo nome contém o texto informado (ex.: `name=rotation` encontra "Heavy Rotation"). O parâmetro é **obrigatório**, de 1 a 100 caracteres. · `200` · `400`
 
 ```http
-  POST /playlists/${playlistId}/tracks/${trackId}
+GET /playlists/by-visibility/${visibility}
 ```
-
-Coloca uma faixa existente na playlist (relação N:N). Devolve a playlist atualizada; o cabeçalho Location aponta para a lista de faixas dela.
-
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `playlistId` | `integer` | **Required**. Id da playlist. Ex.: `1` |
-| `trackId` | `integer` | **Required**. Id da faixa a adicionar. Ex.: `5` |
-
-**Status:** `201` Created · `400` Bad Request · `404` Not Found · `409` Conflict
-
-#### Remove a track from a playlist
+Consulta personalizada: as playlists `PUBLIC` ou `PRIVATE`. · `200` · `400`
 
 ```http
-  DELETE /playlists/${playlistId}/tracks/${trackId}
+GET /playlists/${id}/tracks
+```
+Consulta personalizada: as faixas que fazem parte da playlist (relação N:N). Devolve faixas, então ordena por `id`, `title`, `trackNumber` ou `durationSeconds`. · `200` · `400` · `404`
+
+```http
+GET /playlists/${id}
+```
+Dados de uma única playlist, com a quantidade de faixas e o link para elas. · `200` · `400` · `404`
+
+```http
+POST /playlists
+```
+Cria uma playlist vazia. Para colocar faixas nela, use `POST /playlists/{playlistId}/tracks/{trackId}`. · `201` · `400` · `409`
+
+```http
+PUT /playlists/${id}
+```
+Substitui nome, descrição e visibilidade de uma playlist existente. As faixas dela não mudam. · `200` · `400` · `404` · `409`
+
+```http
+DELETE /playlists/${id}
+```
+Exclui a playlist. As faixas continuam cadastradas; só deixam de fazer parte dela. · `204` · `400` · `404`
+
+```http
+POST /playlists/${playlistId}/tracks/${trackId}
+```
+Coloca uma faixa existente na playlist (relação N:N). Devolve a playlist atualizada; o header `Location` aponta para a lista de faixas dela. · `201` · `400` · `404` · `409`
+
+```http
+DELETE /playlists/${playlistId}/tracks/${trackId}
+```
+Tira a faixa da playlist. A faixa continua cadastrada e em outras playlists. · `204` · `400` · `404`
+
+</details>
+
+## Consultas no Console do H2
+
+As tabelas guardam apenas a **chave estrangeira** (por exemplo, `tracks.album_id`), nunca uma cópia do nome do outro lado: assim o título de um álbum existe em um único lugar e não fica desatualizado. A API já devolve os nomes nas respostas (`albumTitle`, `artistName`); no banco, os nomes aparecem com um `JOIN`. A tabela `playlist_tracks` é só a tabela de ligação do N:N, com `playlist_id` e `track_id`.
+
+> No banco, a gravadora está na coluna `record_label` (`@Column(name = "record_label")`), enquanto no JSON o campo se chama `label`.
+
+<details>
+<summary><b>Quatro consultas prontas</b></summary>
+
+Faixas com o álbum e o artista:
+
+```sql
+SELECT t.id, t.track_number, t.title AS faixa, a.title AS album, ar.name AS artista
+FROM tracks t
+         JOIN albums a ON a.id = t.album_id
+         JOIN artists ar ON ar.id = a.artist_id
+ORDER BY a.id, t.track_number;
 ```
 
-Tira a faixa da playlist. A faixa continua cadastrada e em outras playlists.
+Playlists com o nome das faixas:
 
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `playlistId` | `integer` | **Required**. Id da playlist. Ex.: `1` |
-| `trackId` | `integer` | **Required**. Id da faixa a remover. Ex.: `5` |
+```sql
+SELECT p.id AS playlist_id, p.name AS playlist, t.title AS faixa, a.title AS album, ar.name AS artista
+FROM playlist_tracks pt
+         JOIN playlists p ON p.id = pt.playlist_id
+         JOIN tracks t ON t.id = pt.track_id
+         JOIN albums a ON a.id = t.album_id
+         JOIN artists ar ON ar.id = a.artist_id
+ORDER BY p.id, t.id;
+```
 
-**Status:** `204` No Content · `400` Bad Request · `404` Not Found
+Perfis com o nome do artista, e artistas que ainda não têm perfil (a relação 1:1 é opcional):
+
+```sql
+SELECT ar.name AS artista, pr.hometown, pr.website, pr.instagram
+FROM artist_profiles pr
+         JOIN artists ar ON ar.id = pr.artist_id;
+
+SELECT ar.id, ar.name
+FROM artists ar
+         LEFT JOIN artist_profiles pr ON pr.artist_id = ar.id
+WHERE pr.id IS NULL;
+```
+
+Álbuns com a gravadora e a quantidade de faixas de cada um:
+
+```sql
+SELECT a.id, a.title AS album, a.release_year AS ano, COALESCE(a.record_label, '(sem gravadora)') AS gravadora,
+       COUNT(t.id) AS faixas
+FROM albums a
+         LEFT JOIN tracks t ON t.album_id = a.id
+GROUP BY a.id, a.title, a.release_year, a.record_label
+ORDER BY a.id;
+```
+
+</details>
 
 ## Estrutura do projeto
 
@@ -1044,9 +738,13 @@ src/main/resources
 ├── application.properties
 └── static/       tema do Swagger UI (CSS, fontes e imagens)
 
-postman/         coleção do Postman
+postman/          coleção do Postman
 ```
 
 ## Autor
 
-**Vinícius** — Senac TSI, projeto final da disciplina de Web Services.
+**Vinícius Alves e Sousa** — Senac TSI, projeto final da disciplina de Web Services.
+
+[GitHub](https://github.com/Vikai23) · [LinkedIn](https://www.linkedin.com/in/vin%C3%ADcius-alves-e-sousa-564baa265/)
+
+![xXx thanks for the add xXx — you are visitor #000666](docs/swagger-rodape.png)
