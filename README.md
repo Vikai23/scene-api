@@ -4,6 +4,8 @@ API REST de catálogo musical em **Java 21** e **Spring Boot**: artistas, perfis
 
 > Projeto final da disciplina de **Web Services** (Senac TSI) — **Parte 1**, entregue em out/2026.
 
+[![CI](https://github.com/Vikai23/scene-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Vikai23/scene-api/actions/workflows/ci.yml)
+
 **40 endpoints** · **87 requisições no Postman** (43 delas de erro) · **105 registros de exemplo** carregados ao subir
 
 ![Swagger UI da Scene API, com tema customizado](docs/swagger-hero.png)
@@ -21,6 +23,7 @@ API REST de catálogo musical em **Java 21** e **Spring Boot**: artistas, perfis
 - [API Reference](#api-reference)
 - [Consultas no Console do H2](#consultas-no-console-do-h2)
 - [Estrutura do projeto](#estrutura-do-projeto)
+- [Licença](#licença)
 - [Autor](#autor)
 
 ## Destaques
@@ -741,10 +744,14 @@ src/main/resources
 postman/          coleção do Postman
 ```
 
+## Licença
+
+Distribuído sob a licença Apache 2.0 — veja o arquivo [LICENSE](LICENSE).
+
 ## Autor
 
 **Vinícius Alves e Sousa** — Senac TSI, projeto final da disciplina de Web Services.
 
-[GitHub](https://github.com/Vikai23) · [LinkedIn](https://www.linkedin.com/in/vin%C3%ADcius-alves-e-sousa-564baa265/)
+[GitHub](https://github.com/Vikai23) · [LinkedIn](https://www.linkedin.com/in/vinicius-alves-e-sousa/)
 
 ![xXx thanks for the add xXx — you are visitor #000666](docs/swagger-rodape.png)
