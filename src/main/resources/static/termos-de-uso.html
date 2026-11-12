@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Termos de uso · Scene API</title>
+  <link rel="icon" type="image/svg+xml" href="/music-logo.svg">
+  <style>
+    /* Mesmo papel, tinta e fontes do tema do Swagger UI (swagger-theme.css) */
+    @font-face { font-family: 'Metal Mania'; src: url('/fonts/metal-mania-400.woff2') format('woff2'); font-display: swap; }
+    @font-face { font-family: 'Archivo'; src: url('/fonts/archivo-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+    @font-face { font-family: 'Archivo'; src: url('/fonts/archivo-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+    @font-face { font-family: 'Courier Prime'; src: url('/fonts/courier-prime-400.woff2') format('woff2'); font-display: swap; }
+
+    :root {
+      color-scheme: light;
+      --wall: #0a0a0a;
+      --paper: #efeeea;
+      --ink: #000;
+      --ink-2: #34332f;
+      --rule-soft: rgba(0, 0, 0, .2);
+      --hot: #ff2ea6;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--wall) url('/wallpaper-ink.png') 0 0 / 1024px 1024px repeat fixed; }
+    body { margin: 0; padding: 40px 16px 64px; color: var(--ink); font: 16px/1.6 'Archivo', system-ui, 'Segoe UI', Arial, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 32px 28px 28px; background: var(--paper); border: 4px solid var(--ink); box-shadow: 10px 10px 0 var(--hot); }
+    h1 { margin: 0; font: 400 clamp(40px, 9vw, 64px)/1 'Metal Mania', Impact, fantasy; letter-spacing: .01em; }
+    .lead { margin: 10px 0 28px; padding-bottom: 20px; border-bottom: 1px solid var(--rule-soft); color: var(--ink-2); font-family: 'Courier Prime', 'Courier New', monospace; }
+    h2 { margin: 28px 0 6px; font-size: 19px; font-weight: 700; }
+    p { margin: 0 0 12px; max-width: 68ch; }
+    code { padding: 1px 5px; background: #000; color: var(--paper); font: 14px 'Courier Prime', 'Courier New', monospace; }
+    a { color: var(--ink); text-underline-offset: 3px; }
+    a:hover, a:focus-visible { background: #000; color: var(--paper); text-decoration: none; outline: none; }
+    footer { margin-top: 32px; padding-top: 18px; border-top: 1px solid var(--rule-soft); font-family: 'Courier Prime', 'Courier New', monospace; font-size: 14px; }
+    @media (max-width: 520px) { main { padding: 24px 18px 20px; box-shadow: 6px 6px 0 var(--hot); } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Termos de uso</h1>
+  <p class="lead">Scene API · projeto final de Web Services (Senac TSI)</p>
+
+  <h2>1. O que é esta API</h2>
+  <p>A Scene API é um projeto acadêmico: uma API REST de catálogo musical feita para estudo e demonstração.
+    Ela não é um serviço comercial e pode ser usada livremente para testes, aulas e avaliação.</p>
+
+  <h2>2. Dados</h2>
+  <p>Os dados ficam em um banco em memória e são apagados toda vez que a aplicação reinicia. O que vem cadastrado é
+    conteúdo de exemplo. Não envie dados pessoais nem informações sensíveis: nada do que for cadastrado é protegido
+    ou guardado de forma permanente.</p>
+
+  <h2>3. Uso justo</h2>
+  <p>Há um limite de requisições por endereço IP (rate limiting por token bucket), descrito na documentação.
+    Quem passa do limite recebe <code>429 Too Many Requests</code> e deve esperar o tempo indicado no cabeçalho
+    <code>Retry-After</code>. Não tente contornar o limite nem sobrecarregar o serviço.</p>
+
+  <h2>4. Versões</h2>
+  <p>Mudanças que alteram o formato das respostas entram em uma versão nova, escolhida no cabeçalho
+    <code>X-API-Version</code>. Quem não envia o cabeçalho continua recebendo a versão 1.</p>
+
+  <h2>5. Sem garantias</h2>
+  <p>A API é oferecida no estado em que se encontra, sem garantia de disponibilidade, de suporte ou de que os dados
+    estejam corretos. Ela pode mudar ou sair do ar a qualquer momento, sem aviso.</p>
+
+  <h2>6. Licença e conteúdo</h2>
+  <p>O código-fonte é distribuído sob a
+    <a href="https://www.apache.org/licenses/LICENSE-2.0">licença Apache 2.0</a>. Os nomes de artistas, álbuns e faixas
+    que aparecem nos dados de exemplo pertencem aos seus respectivos donos e são citados apenas como exemplo.</p>
+
+  <h2>7. Contato</h2>
+  <p>Dúvidas e sugestões: <a href="https://github.com/Vikai23/scene-api">repositório do projeto no GitHub</a>.</p>
+
+  <footer>
+    Última atualização: novembro de 2026 · <a href="/swagger-ui/index.html">Voltar para a documentação</a>
+  </footer>
+</main>
+</body>
+</html>

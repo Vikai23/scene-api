@@ -7,6 +7,8 @@ import com.vinicius.scene_api.dto.PlaylistResponse;
 import com.vinicius.scene_api.dto.TrackRequest;
 import com.vinicius.scene_api.dto.TrackResponse;
 import com.vinicius.scene_api.exception.ApiError;
+import com.vinicius.scene_api.idempotency.IdempotencyService;
+import com.vinicius.scene_api.idempotency.IdempotentResult;
 import com.vinicius.scene_api.service.TrackService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -35,17 +37,20 @@ import org.springframework.web.bind.annotation.*;
 public class TrackController {
 
     private final TrackService trackService;
+    private final IdempotencyService idempotencyService;
     private final TrackModelAssembler assembler;
     private final PlaylistModelAssembler playlistAssembler;
     private final PagedResourcesAssembler<TrackResponse> pagedAssembler;
     private final PagedResourcesAssembler<PlaylistResponse> pagedPlaylistAssembler;
 
     public TrackController(TrackService trackService,
+                           IdempotencyService idempotencyService,
                            TrackModelAssembler assembler,
                            PlaylistModelAssembler playlistAssembler,
                            PagedResourcesAssembler<TrackResponse> pagedAssembler,
                            PagedResourcesAssembler<PlaylistResponse> pagedPlaylistAssembler) {
         this.trackService = trackService;
+        this.idempotencyService = idempotencyService;
         this.assembler = assembler;
         this.playlistAssembler = playlistAssembler;
         this.pagedAssembler = pagedAssembler;
@@ -185,9 +190,15 @@ public class TrackController {
                             examples = @ExampleObject(name = "Número duplicado", value = ErrorExamples.CONFLICT_TRACK)))
     })
     @PostMapping
-    public ResponseEntity<EntityModel<TrackResponse>> create(@RequestBody @Valid TrackRequest request) {
-        EntityModel<TrackResponse> model = assembler.toModel(trackService.create(request));
-        return ResponseEntity.created(model.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(model);
+    public ResponseEntity<EntityModel<TrackResponse>> create(
+            @RequestHeader(name = IdempotencyService.HEADER, required = false) String idempotencyKey,
+            @RequestBody @Valid TrackRequest request) {
+        IdempotentResult<TrackResponse> result = idempotencyService.execute(idempotencyKey, "POST /tracks",
+                request, TrackResponse.class, () -> trackService.create(request));
+        EntityModel<TrackResponse> model = assembler.toModel(result.body());
+        return ResponseEntity.created(model.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .headers(result.responseHeaders())
+                .body(model);
     }
 
     @Operation(

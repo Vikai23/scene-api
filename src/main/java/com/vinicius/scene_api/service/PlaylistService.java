@@ -10,6 +10,7 @@ import com.vinicius.scene_api.model.Track;
 import com.vinicius.scene_api.model.Visibility;
 import com.vinicius.scene_api.repository.PlaylistRepository;
 import com.vinicius.scene_api.repository.TrackRepository;
+import com.vinicius.scene_api.validation.SortFields;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,19 +29,23 @@ public class PlaylistService {
     }
 
     public Page<PlaylistResponse> findAll(Pageable pageable) {
+        SortFields.check(pageable, SortFields.PLAYLIST);
         return playlistRepository.findAll(pageable).map(PlaylistResponse::from);
     }
 
     public Page<PlaylistResponse> searchByName(String name, Pageable pageable) {
+        SortFields.check(pageable, SortFields.PLAYLIST);
         return playlistRepository.findByNameContainingIgnoreCase(name, pageable).map(PlaylistResponse::from);
     }
 
     public Page<PlaylistResponse> findByVisibility(Visibility visibility, Pageable pageable) {
+        SortFields.check(pageable, SortFields.PLAYLIST);
         return playlistRepository.findByVisibility(visibility, pageable).map(PlaylistResponse::from);
     }
 
     /** Faixas que fazem parte da playlist. */
     public Page<TrackResponse> findTracks(Long playlistId, Pageable pageable) {
+        SortFields.check(pageable, SortFields.TRACK);
         if (!playlistRepository.existsById(playlistId)) {
             throw new ResourceNotFoundException("Playlist", playlistId);
         }

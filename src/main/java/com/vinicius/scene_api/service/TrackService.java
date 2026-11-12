@@ -10,6 +10,7 @@ import com.vinicius.scene_api.model.Track;
 import com.vinicius.scene_api.repository.AlbumRepository;
 import com.vinicius.scene_api.repository.PlaylistRepository;
 import com.vinicius.scene_api.repository.TrackRepository;
+import com.vinicius.scene_api.validation.SortFields;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -31,14 +32,17 @@ public class TrackService {
     }
 
     public Page<TrackResponse> findAll(Pageable pageable) {
+        SortFields.check(pageable, SortFields.TRACK);
         return trackRepository.findAll(pageable).map(TrackResponse::from);
     }
 
     public Page<TrackResponse> searchByTitle(String title, Pageable pageable) {
+        SortFields.check(pageable, SortFields.TRACK);
         return trackRepository.findByTitleContainingIgnoreCase(title, pageable).map(TrackResponse::from);
     }
 
     public Page<TrackResponse> findByAlbum(Long albumId, Pageable pageable) {
+        SortFields.check(pageable, SortFields.TRACK);
         if (!albumRepository.existsById(albumId)) {
             throw new ResourceNotFoundException("Álbum", albumId);
         }
@@ -47,6 +51,7 @@ public class TrackService {
 
     /** Playlists que contêm a faixa. */
     public Page<PlaylistResponse> findPlaylists(Long trackId, Pageable pageable) {
+        SortFields.check(pageable, SortFields.PLAYLIST);
         if (!trackRepository.existsById(trackId)) {
             throw new ResourceNotFoundException("Faixa", trackId);
         }

@@ -10,6 +10,7 @@ import com.vinicius.scene_api.model.Artist;
 import com.vinicius.scene_api.model.Track;
 import com.vinicius.scene_api.repository.AlbumRepository;
 import com.vinicius.scene_api.repository.ArtistRepository;
+import com.vinicius.scene_api.validation.SortFields;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,18 +29,22 @@ public class AlbumService {
     }
 
     public Page<AlbumResponse> findAll(Pageable pageable) {
+        SortFields.check(pageable, SortFields.ALBUM);
         return albumRepository.findAll(pageable).map(AlbumResponse::from);
     }
 
     public Page<AlbumResponse> searchByTitle(String title, Pageable pageable) {
+        SortFields.check(pageable, SortFields.ALBUM);
         return albumRepository.findByTitleContainingIgnoreCase(title, pageable).map(AlbumResponse::from);
     }
 
     public Page<AlbumResponse> findByType(AlbumType type, Pageable pageable) {
+        SortFields.check(pageable, SortFields.ALBUM);
         return albumRepository.findByType(type, pageable).map(AlbumResponse::from);
     }
 
     public Page<AlbumResponse> findByArtist(Long artistId, Pageable pageable) {
+        SortFields.check(pageable, SortFields.ALBUM);
         if (!artistRepository.existsById(artistId)) {
             throw new ResourceNotFoundException("Artista", artistId);
         }

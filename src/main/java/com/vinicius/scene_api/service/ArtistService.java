@@ -2,13 +2,16 @@ package com.vinicius.scene_api.service;
 
 import com.vinicius.scene_api.dto.ArtistRequest;
 import com.vinicius.scene_api.dto.ArtistResponse;
+import com.vinicius.scene_api.dto.ArtistResponseV2;
 import com.vinicius.scene_api.exception.ConflictException;
 import com.vinicius.scene_api.exception.ResourceNotFoundException;
 import com.vinicius.scene_api.model.Artist;
 import com.vinicius.scene_api.model.Genre;
 import com.vinicius.scene_api.model.Track;
+import com.vinicius.scene_api.repository.AlbumRepository;
 import com.vinicius.scene_api.repository.ArtistProfileRepository;
 import com.vinicius.scene_api.repository.ArtistRepository;
+import com.vinicius.scene_api.validation.SortFields;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,26 +23,38 @@ public class ArtistService {
 
     private final ArtistRepository artistRepository;
     private final ArtistProfileRepository profileRepository;
+    private final AlbumRepository albumRepository;
 
-    public ArtistService(ArtistRepository artistRepository, ArtistProfileRepository profileRepository) {
+    public ArtistService(ArtistRepository artistRepository, ArtistProfileRepository profileRepository,
+                         AlbumRepository albumRepository) {
         this.artistRepository = artistRepository;
         this.profileRepository = profileRepository;
+        this.albumRepository = albumRepository;
     }
 
     public Page<ArtistResponse> findAll(Pageable pageable) {
+        SortFields.check(pageable, SortFields.ARTIST);
         return artistRepository.findAll(pageable).map(ArtistResponse::from);
     }
 
     public Page<ArtistResponse> searchByName(String name, Pageable pageable) {
+        SortFields.check(pageable, SortFields.ARTIST);
         return artistRepository.findByNameContainingIgnoreCase(name, pageable).map(ArtistResponse::from);
     }
 
     public Page<ArtistResponse> findByGenre(Genre genre, Pageable pageable) {
+        SortFields.check(pageable, SortFields.ARTIST);
         return artistRepository.findByGenre(genre, pageable).map(ArtistResponse::from);
     }
 
     public ArtistResponse findById(Long id) {
         return ArtistResponse.from(getArtist(id));
+    }
+
+    /** Versão 2 da consulta por id: além dos dados do artista, conta os álbuns e diz se ele já tem perfil. */
+    public ArtistResponseV2 findByIdV2(Long id) {
+        Artist artist = getArtist(id);
+        return ArtistResponseV2.from(artist, albumRepository.countByArtist_Id(id), profileRepository.existsByArtist_Id(id));
     }
 
     @Transactional

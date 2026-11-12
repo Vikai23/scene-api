@@ -9,6 +9,7 @@ import com.vinicius.scene_api.model.Artist;
 import com.vinicius.scene_api.model.ArtistProfile;
 import com.vinicius.scene_api.repository.ArtistProfileRepository;
 import com.vinicius.scene_api.repository.ArtistRepository;
+import com.vinicius.scene_api.validation.SortFields;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,10 +28,12 @@ public class ArtistProfileService {
     }
 
     public Page<ArtistProfileResponse> findAll(Pageable pageable) {
+        SortFields.check(pageable, SortFields.ARTIST_PROFILE);
         return profileRepository.findAll(pageable).map(ArtistProfileResponse::from);
     }
 
     public Page<ArtistProfileResponse> searchByHometown(String hometown, Pageable pageable) {
+        SortFields.check(pageable, SortFields.ARTIST_PROFILE);
         return profileRepository.findByHometownContainingIgnoreCase(hometown, pageable).map(ArtistProfileResponse::from);
     }
 

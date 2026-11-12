@@ -1,0 +1,43 @@
+package com.vinicius.scene_api.ratelimit;
+
+import com.vinicius.scene_api.exception.RateLimitExceededException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+
+/**
+ * Roda antes de cada rota da API: gasta uma ficha do balde do IP que fez a chamada e informa o saldo nos
+ * cabeçalhos {@code X-RateLimit-*}. Sem ficha, lança {@link RateLimitExceededException}, que vira
+ * 429 Too Many Requests com o cabeçalho {@code Retry-After} no tratamento global de erros.
+ */
+@Component
+public class RateLimitInterceptor implements HandlerInterceptor {
+
+    /** Capacidade do balde (maior rajada possível). */
+    public static final String LIMIT_HEADER = "X-RateLimit-Limit";
+
+    /** Fichas que sobraram depois desta requisição. */
+    public static final String REMAINING_HEADER = "X-RateLimit-Remaining";
+
+    /** Segundos até o balde ficar cheio de novo. */
+    public static final String RESET_HEADER = "X-RateLimit-Reset";
+
+    private final RateLimiter rateLimiter;
+
+    public RateLimitInterceptor(RateLimiter rateLimiter) {
+        this.rateLimiter = rateLimiter;
+    }
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        RateLimitResult result = rateLimiter.tryConsume(request.getRemoteAddr());
+        response.setHeader(LIMIT_HEADER, String.valueOf(result.limit()));
+        response.setHeader(REMAINING_HEADER, String.valueOf(result.remaining()));
+        response.setHeader(RESET_HEADER, String.valueOf(result.resetSeconds()));
+        if (!result.allowed()) {
+            throw new RateLimitExceededException(result.retryAfterSeconds());
+        }
+        return true;
+    }
+}

@@ -5,6 +5,8 @@ import com.vinicius.scene_api.dto.ArtistProfileRequest;
 import com.vinicius.scene_api.dto.ArtistProfileResponse;
 import com.vinicius.scene_api.dto.ErrorExamples;
 import com.vinicius.scene_api.exception.ApiError;
+import com.vinicius.scene_api.idempotency.IdempotencyService;
+import com.vinicius.scene_api.idempotency.IdempotentResult;
 import com.vinicius.scene_api.service.ArtistProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,13 +35,16 @@ import org.springframework.web.bind.annotation.*;
 public class ArtistProfileController {
 
     private final ArtistProfileService profileService;
+    private final IdempotencyService idempotencyService;
     private final ArtistProfileModelAssembler assembler;
     private final PagedResourcesAssembler<ArtistProfileResponse> pagedAssembler;
 
     public ArtistProfileController(ArtistProfileService profileService,
+                                   IdempotencyService idempotencyService,
                                    ArtistProfileModelAssembler assembler,
                                    PagedResourcesAssembler<ArtistProfileResponse> pagedAssembler) {
         this.profileService = profileService;
+        this.idempotencyService = idempotencyService;
         this.assembler = assembler;
         this.pagedAssembler = pagedAssembler;
     }
@@ -156,9 +161,15 @@ public class ArtistProfileController {
                             examples = @ExampleObject(name = "Perfil duplicado", value = ErrorExamples.CONFLICT_PROFILE)))
     })
     @PostMapping
-    public ResponseEntity<EntityModel<ArtistProfileResponse>> create(@RequestBody @Valid ArtistProfileRequest request) {
-        EntityModel<ArtistProfileResponse> model = assembler.toModel(profileService.create(request));
-        return ResponseEntity.created(model.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(model);
+    public ResponseEntity<EntityModel<ArtistProfileResponse>> create(
+            @RequestHeader(name = IdempotencyService.HEADER, required = false) String idempotencyKey,
+            @RequestBody @Valid ArtistProfileRequest request) {
+        IdempotentResult<ArtistProfileResponse> result = idempotencyService.execute(idempotencyKey, "POST /artist-profiles",
+                request, ArtistProfileResponse.class, () -> profileService.create(request));
+        EntityModel<ArtistProfileResponse> model = assembler.toModel(result.body());
+        return ResponseEntity.created(model.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .headers(result.responseHeaders())
+                .body(model);
     }
 
     @Operation(

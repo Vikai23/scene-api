@@ -1,0 +1,88 @@
+package com.vinicius.scene_api.integration;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * Base dos testes de integração: sobe a aplicação inteira em uma porta livre e faz requisições HTTP de
+ * verdade, como o Postman faria. Assim os testes passam por tudo: filtro de CORS, interceptadores,
+ * controllers, services e banco.
+ */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+        // banco só destes testes, para não misturar com o de outras classes
+        "spring.datasource.url=jdbc:h2:mem:integration-tests",
+        // limite alto: aqui o rate limiting não é o assunto (ele tem a própria classe de teste)
+        "scene.rate-limit.capacity=100000",
+        "scene.rate-limit.refill-tokens=100000"
+})
+abstract class IntegrationTestSupport {
+
+    private static final AtomicInteger SEQUENCE = new AtomicInteger();
+
+    private final HttpClient client = HttpClient.newHttpClient();
+
+    /** Porta em que a aplicação subiu neste teste. */
+    @Value("${local.server.port}")
+    private int port;
+
+    @Autowired
+    private JsonMapper jsonMapper;
+
+    protected HttpResponse<String> get(String path, String... headers) {
+        return send("GET", path, null, headers);
+    }
+
+    protected HttpResponse<String> post(String path, String json, String... headers) {
+        return send("POST", path, json, headers);
+    }
+
+    /**
+     * Envia uma requisição. Os cabeçalhos vêm em pares: nome, valor, nome, valor...
+     * Quando há corpo, o Content-Type é application/json, a não ser que o teste informe outro.
+     */
+    protected HttpResponse<String> send(String method, String path, String json, String... headers) {
+        HttpRequest.Builder request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path));
+        if (json == null) {
+            request.method(method, HttpRequest.BodyPublishers.noBody());
+        } else {
+            request.method(method, HttpRequest.BodyPublishers.ofString(json));
+            request.setHeader("Content-Type", "application/json");
+        }
+        for (int i = 0; i < headers.length; i += 2) {
+            request.setHeader(headers[i], headers[i + 1]);
+        }
+        try {
+            return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
+        } catch (IOException ex) {
+            throw new IllegalStateException("Falha ao chamar " + method + " " + path, ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Chamada interrompida: " + method + " " + path, ex);
+        }
+    }
+
+    /** Corpo da resposta já convertido de JSON, para o teste ler os campos. */
+    protected JsonNode json(HttpResponse<String> response) {
+        return jsonMapper.readTree(response.body());
+    }
+
+    /** Valor de um cabeçalho da resposta, ou {@code null} se ele não veio. */
+    protected String header(HttpResponse<String> response, String name) {
+        return response.headers().firstValue(name).orElse(null);
+    }
+
+    /** Nome que não se repete entre os testes, para um cadastro não esbarrar em outro (ex.: "Banda 3 de teste"). */
+    protected String unique(String prefix) {
+        return prefix + " " + SEQUENCE.incrementAndGet() + " de teste";
+    }
+}

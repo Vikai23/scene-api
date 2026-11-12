@@ -14,6 +14,8 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
 
     Page<Album> findByType(AlbumType type, Pageable pageable);
 
+    long countByArtist_Id(Long artistId);
+
     boolean existsByArtist_IdAndTitleIgnoreCase(Long artistId, String title);
 
     boolean existsByArtist_IdAndTitleIgnoreCaseAndIdNot(Long artistId, String title, Long id);

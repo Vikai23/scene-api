@@ -1,10 +1,15 @@
 package com.vinicius.scene_api.controller;
 
 import com.vinicius.scene_api.assembler.ArtistModelAssembler;
+import com.vinicius.scene_api.assembler.ArtistV2ModelAssembler;
+import com.vinicius.scene_api.config.ApiVersionConfig;
 import com.vinicius.scene_api.dto.ArtistRequest;
 import com.vinicius.scene_api.dto.ArtistResponse;
+import com.vinicius.scene_api.dto.ArtistResponseV2;
 import com.vinicius.scene_api.dto.ErrorExamples;
 import com.vinicius.scene_api.exception.ApiError;
+import com.vinicius.scene_api.idempotency.IdempotencyService;
+import com.vinicius.scene_api.idempotency.IdempotentResult;
 import com.vinicius.scene_api.model.Genre;
 import com.vinicius.scene_api.service.ArtistService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,14 +39,20 @@ import org.springframework.web.bind.annotation.*;
 public class ArtistController {
 
     private final ArtistService artistService;
+    private final IdempotencyService idempotencyService;
     private final ArtistModelAssembler assembler;
+    private final ArtistV2ModelAssembler assemblerV2;
     private final PagedResourcesAssembler<ArtistResponse> pagedAssembler;
 
     public ArtistController(ArtistService artistService,
+                            IdempotencyService idempotencyService,
                             ArtistModelAssembler assembler,
+                            ArtistV2ModelAssembler assemblerV2,
                             PagedResourcesAssembler<ArtistResponse> pagedAssembler) {
         this.artistService = artistService;
+        this.idempotencyService = idempotencyService;
         this.assembler = assembler;
+        this.assemblerV2 = assemblerV2;
         this.pagedAssembler = pagedAssembler;
     }
 
@@ -121,11 +132,22 @@ public class ArtistController {
                             schema = @Schema(implementation = ApiError.class),
                             examples = @ExampleObject(name = "Não encontrado", value = ErrorExamples.NOT_FOUND_ARTIST)))
     })
-    @GetMapping("/{id}")
+    @GetMapping(path = "/{id}", version = ApiVersionConfig.V1)
     public ResponseEntity<EntityModel<ArtistResponse>> findById(
             @Parameter(description = "Id do artista", example = "1")
             @PathVariable Long id) {
         return ResponseEntity.ok(assembler.toModel(artistService.findById(id)));
+    }
+
+    /**
+     * Versão 2 da mesma rota: atende quando o cliente manda o cabeçalho X-API-Version: 2.
+     * A documentação das duas versões fica em uma única operação no Swagger (ver OpenApiPartTwoCustomizer).
+     */
+    @GetMapping(path = "/{id}", version = ApiVersionConfig.V2)
+    public ResponseEntity<EntityModel<ArtistResponseV2>> findByIdV2(
+            @Parameter(description = "Id do artista", example = "1")
+            @PathVariable Long id) {
+        return ResponseEntity.ok(assemblerV2.toModel(artistService.findByIdV2(id)));
     }
 
     @Operation(
@@ -147,9 +169,15 @@ public class ArtistController {
                             examples = @ExampleObject(name = "Nome duplicado", value = ErrorExamples.CONFLICT_ARTIST)))
     })
     @PostMapping
-    public ResponseEntity<EntityModel<ArtistResponse>> create(@RequestBody @Valid ArtistRequest request) {
-        EntityModel<ArtistResponse> model = assembler.toModel(artistService.create(request));
-        return ResponseEntity.created(model.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(model);
+    public ResponseEntity<EntityModel<ArtistResponse>> create(
+            @RequestHeader(name = IdempotencyService.HEADER, required = false) String idempotencyKey,
+            @RequestBody @Valid ArtistRequest request) {
+        IdempotentResult<ArtistResponse> result = idempotencyService.execute(idempotencyKey, "POST /artists",
+                request, ArtistResponse.class, () -> artistService.create(request));
+        EntityModel<ArtistResponse> model = assembler.toModel(result.body());
+        return ResponseEntity.created(model.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .headers(result.responseHeaders())
+                .body(model);
     }
 
     @Operation(

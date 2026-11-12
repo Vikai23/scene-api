@@ -5,6 +5,8 @@ import com.vinicius.scene_api.dto.AlbumRequest;
 import com.vinicius.scene_api.dto.AlbumResponse;
 import com.vinicius.scene_api.dto.ErrorExamples;
 import com.vinicius.scene_api.exception.ApiError;
+import com.vinicius.scene_api.idempotency.IdempotencyService;
+import com.vinicius.scene_api.idempotency.IdempotentResult;
 import com.vinicius.scene_api.model.AlbumType;
 import com.vinicius.scene_api.service.AlbumService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,13 +36,16 @@ import org.springframework.web.bind.annotation.*;
 public class AlbumController {
 
     private final AlbumService albumService;
+    private final IdempotencyService idempotencyService;
     private final AlbumModelAssembler assembler;
     private final PagedResourcesAssembler<AlbumResponse> pagedAssembler;
 
     public AlbumController(AlbumService albumService,
+                           IdempotencyService idempotencyService,
                            AlbumModelAssembler assembler,
                            PagedResourcesAssembler<AlbumResponse> pagedAssembler) {
         this.albumService = albumService;
+        this.idempotencyService = idempotencyService;
         this.assembler = assembler;
         this.pagedAssembler = pagedAssembler;
     }
@@ -174,9 +179,15 @@ public class AlbumController {
                             examples = @ExampleObject(name = "Título duplicado", value = ErrorExamples.CONFLICT_ALBUM)))
     })
     @PostMapping
-    public ResponseEntity<EntityModel<AlbumResponse>> create(@RequestBody @Valid AlbumRequest request) {
-        EntityModel<AlbumResponse> model = assembler.toModel(albumService.create(request));
-        return ResponseEntity.created(model.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(model);
+    public ResponseEntity<EntityModel<AlbumResponse>> create(
+            @RequestHeader(name = IdempotencyService.HEADER, required = false) String idempotencyKey,
+            @RequestBody @Valid AlbumRequest request) {
+        IdempotentResult<AlbumResponse> result = idempotencyService.execute(idempotencyKey, "POST /albums",
+                request, AlbumResponse.class, () -> albumService.create(request));
+        EntityModel<AlbumResponse> model = assembler.toModel(result.body());
+        return ResponseEntity.created(model.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .headers(result.responseHeaders())
+                .body(model);
     }
 
     @Operation(

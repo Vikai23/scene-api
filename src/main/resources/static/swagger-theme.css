@@ -47,7 +47,7 @@
   --f-zine:  'Special Elite', 'Courier New', ui-monospace, monospace;
   --f-hand:  'Rock Salt', 'Segoe Print', 'Comic Sans MS', cursive;
 
-  --ml-ticker: "xXx now playing: Apology - Alesana xXx mood: caffeinated and loud xXx rawr XD xXx online now xXx 666 xXx top 8: Bring Me the Horizon, Title Fight, Asking Alexandria, blessthefall, Alesana, I Promised the World xXx on repeat: Sempiternal, Shed, Stand Up and Scream, His Last Walk xXx 200 OK xXx 201 Created xXx 204 No Content xXx 400 Bad Request xXx 404 Not Found xXx 409 Conflict xXx (x_x) r.i.p. 500 Internal Server Error xXx :3 thanks for the add xXx best viewed at 1024x768 xXx ";
+  --ml-ticker: "xXx now playing: Apology - Alesana xXx mood: caffeinated and loud xXx rawr XD xXx online now xXx 666 xXx top 8: Bring Me the Horizon, Title Fight, Asking Alexandria, blessthefall, Alesana, I Promised the World xXx on repeat: Sempiternal, Shed, Stand Up and Scream, His Last Walk xXx 200 OK xXx 201 Created xXx 204 No Content xXx 400 Bad Request xXx 403 Forbidden xXx 404 Not Found xXx 409 Conflict xXx 422 Unprocessable Content xXx 429 Too Many Requests (slow down!!) xXx (x_x) r.i.p. 500 Internal Server Error xXx :3 thanks for the add xXx best viewed at 1024x768 xXx ";
 }
 
 /* ---------- Base: fundo de perfil emo (xerox rabiscado, estrela de 7 pontas e glitch) ---------- */
@@ -306,9 +306,50 @@ html body { background: transparent !important; color: var(--ink); font-family: 
 }
 .swagger-ui .info .renderedMarkdown table td { padding: 9px 12px; border-top: 1px solid var(--rule-soft); vertical-align: top; font-size: 14px; }
 .swagger-ui .info .renderedMarkdown table td code { white-space: nowrap; }
-.swagger-ui .info__contact, .swagger-ui .info__license, .swagger-ui .info__tos { padding: 0 28px 4px; font-family: var(--f-mono); }
-.swagger-ui .info .info__contact a, .swagger-ui .info .info__license a, .swagger-ui .info .info__tos a { font: 14px var(--f-mono) !important; }
-.swagger-ui .info .info__license { padding-bottom: 24px; }
+/* nomes de cabeçalho e endereços (ex.: X-RateLimit-Remaining) não se partem no hífen de uma linha para a outra */
+.swagger-ui .info .renderedMarkdown p code, .swagger-ui .info .renderedMarkdown li code { white-space: nowrap; }
+/* a primeira coluna é o nome da linha (ex.: "422 Unprocessable Content"): em tela larga não quebra */
+@media (min-width: 900px) {
+  .swagger-ui .info .renderedMarkdown table td:first-child { white-space: nowrap; }
+}
+
+/* "Details": termos de uso, contato, licença e repositório viram a tabela de detalhes de um perfil.
+   O Swagger UI gera um bloco solto para cada um; aqui cada bloco é uma linha, com o rótulo na coluna preta. */
+.swagger-ui .info .description::after {
+  content: "Details:";
+  display: block;
+  margin: 0 28px; padding: 6px 12px;
+  background: var(--grape); color: #fff;
+  font: 700 14px/1.2 var(--f-body); letter-spacing: .02em;
+}
+.swagger-ui .info .info__tos, .swagger-ui .info .info__contact, .swagger-ui .info .info__license, .swagger-ui .info a.info__extdocs {
+  position: relative; display: block;
+  margin: 0 28px; padding: 0 0 0 150px;
+  border: 1px solid #000; border-top: 0;
+  background: var(--paper-hi);
+}
+.swagger-ui .info .info__tos::before, .swagger-ui .info .info__contact::before,
+.swagger-ui .info .info__license::before, .swagger-ui .info a.info__extdocs::before {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 150px;
+  display: flex; align-items: center; padding: 0 12px;
+  background: #000; color: var(--paper);
+  font: 700 15px/1.1 var(--f-cond); letter-spacing: .08em; text-transform: uppercase;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .28);
+}
+.swagger-ui .info .info__tos::before { content: "Termos de uso"; }
+.swagger-ui .info .info__contact::before { content: "Contato"; }
+.swagger-ui .info .info__license::before { content: "Licença"; }
+.swagger-ui .info a.info__extdocs::before { content: "Repositório"; }
+.swagger-ui .info .info__tos a, .swagger-ui .info .info__contact a, .swagger-ui .info .info__license a, .swagger-ui .info a.info__extdocs {
+  font: 14px/1.4 var(--f-mono) !important; color: var(--ink) !important;
+}
+.swagger-ui .info .info__tos a, .swagger-ui .info .info__contact a, .swagger-ui .info .info__license a { display: block; padding: 9px 12px; }
+.swagger-ui .info a.info__extdocs { padding: 9px 12px 9px 162px; margin-bottom: 28px; }
+.swagger-ui .info .info__tos a:hover, .swagger-ui .info .info__contact a:hover,
+.swagger-ui .info .info__license a:hover, .swagger-ui .info a.info__extdocs:hover { color: var(--paper) !important; }
+/* o texto "Terms of service" é fixo no Swagger UI: some com ele e escreve em português no lugar */
+.swagger-ui .info .info__tos a { font-size: 0 !important; }
+.swagger-ui .info .info__tos a::after { content: "Ler os termos de uso da API"; font: 14px/1.4 var(--f-mono); }
 
 /* ---------- Servidores ("Contacting") e filtro ---------- */
 .swagger-ui .scheme-container { margin: 0 0 40px; padding: 0 !important; background: transparent !important; box-shadow: none !important; }
@@ -639,7 +680,12 @@ body::after {
   .swagger-ui .info hgroup.main::after { font-size: clamp(11px, 3.2vw, 15px); white-space: pre-wrap; overflow-wrap: anywhere; }
   .swagger-ui .info .description::before { margin: 22px 16px 0; }
   .swagger-ui .info .renderedMarkdown { padding: 14px 16px 22px; }
-  .swagger-ui .info__contact, .swagger-ui .info__license, .swagger-ui .info__tos { padding: 0 16px 4px; }
+  .swagger-ui .info .description::after { margin: 0 16px; }
+  .swagger-ui .info .info__tos, .swagger-ui .info .info__contact, .swagger-ui .info .info__license, .swagger-ui .info a.info__extdocs { margin-left: 16px; margin-right: 16px; padding-left: 104px; }
+  .swagger-ui .info .info__tos::before, .swagger-ui .info .info__contact::before,
+  .swagger-ui .info .info__license::before, .swagger-ui .info a.info__extdocs::before { width: 104px; padding: 0 8px; font-size: 13px; letter-spacing: .04em; }
+  .swagger-ui .info a.info__extdocs { padding-left: 116px; margin-bottom: 22px; }
+  .swagger-ui .info .info__tos a, .swagger-ui .info .info__contact a, .swagger-ui .info .info__license a, .swagger-ui .info a.info__extdocs { overflow-wrap: anywhere; }
   .swagger-ui h3.opblock-tag { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "idx btn" "name btn" "desc desc"; padding: 12px 14px 14px !important; }
   .swagger-ui .topbar a.link::after { font-size: 22px; }
   .swagger-ui .topbar .topbar-wrapper::after { display: none; }

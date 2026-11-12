@@ -7,6 +7,8 @@ import com.vinicius.scene_api.dto.PlaylistRequest;
 import com.vinicius.scene_api.dto.PlaylistResponse;
 import com.vinicius.scene_api.dto.TrackResponse;
 import com.vinicius.scene_api.exception.ApiError;
+import com.vinicius.scene_api.idempotency.IdempotencyService;
+import com.vinicius.scene_api.idempotency.IdempotentResult;
 import com.vinicius.scene_api.model.Visibility;
 import com.vinicius.scene_api.service.PlaylistService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,17 +43,20 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class PlaylistController {
 
     private final PlaylistService playlistService;
+    private final IdempotencyService idempotencyService;
     private final PlaylistModelAssembler assembler;
     private final TrackModelAssembler trackAssembler;
     private final PagedResourcesAssembler<PlaylistResponse> pagedAssembler;
     private final PagedResourcesAssembler<TrackResponse> pagedTrackAssembler;
 
     public PlaylistController(PlaylistService playlistService,
+                              IdempotencyService idempotencyService,
                               PlaylistModelAssembler assembler,
                               TrackModelAssembler trackAssembler,
                               PagedResourcesAssembler<PlaylistResponse> pagedAssembler,
                               PagedResourcesAssembler<TrackResponse> pagedTrackAssembler) {
         this.playlistService = playlistService;
+        this.idempotencyService = idempotencyService;
         this.assembler = assembler;
         this.trackAssembler = trackAssembler;
         this.pagedAssembler = pagedAssembler;
@@ -183,9 +188,15 @@ public class PlaylistController {
                             examples = @ExampleObject(name = "Nome duplicado", value = ErrorExamples.CONFLICT_PLAYLIST)))
     })
     @PostMapping
-    public ResponseEntity<EntityModel<PlaylistResponse>> create(@RequestBody @Valid PlaylistRequest request) {
-        EntityModel<PlaylistResponse> model = assembler.toModel(playlistService.create(request));
-        return ResponseEntity.created(model.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(model);
+    public ResponseEntity<EntityModel<PlaylistResponse>> create(
+            @RequestHeader(name = IdempotencyService.HEADER, required = false) String idempotencyKey,
+            @RequestBody @Valid PlaylistRequest request) {
+        IdempotentResult<PlaylistResponse> result = idempotencyService.execute(idempotencyKey, "POST /playlists",
+                request, PlaylistResponse.class, () -> playlistService.create(request));
+        EntityModel<PlaylistResponse> model = assembler.toModel(result.body());
+        return ResponseEntity.created(model.getRequiredLink(IanaLinkRelations.SELF).toUri())
+                .headers(result.responseHeaders())
+                .body(model);
     }
 
     @Operation(
@@ -265,10 +276,16 @@ public class PlaylistController {
             @Parameter(description = "Id da playlist", example = "1")
             @PathVariable Long playlistId,
             @Parameter(description = "Id da faixa a adicionar", example = "5")
-            @PathVariable Long trackId) {
-        EntityModel<PlaylistResponse> model = assembler.toModel(playlistService.addTrack(playlistId, trackId));
+            @PathVariable Long trackId,
+            @RequestHeader(name = IdempotencyService.HEADER, required = false) String idempotencyKey) {
+        IdempotentResult<PlaylistResponse> result = idempotencyService.execute(idempotencyKey,
+                "POST /playlists/" + playlistId + "/tracks/" + trackId, null, PlaylistResponse.class,
+                () -> playlistService.addTrack(playlistId, trackId));
+        EntityModel<PlaylistResponse> model = assembler.toModel(result.body());
         URI location = linkTo(methodOn(PlaylistController.class).findTracks(playlistId, Pageable.unpaged())).toUri();
-        return ResponseEntity.created(location).body(model);
+        return ResponseEntity.created(location)
+                .headers(result.responseHeaders())
+                .body(model);
     }
 
     @Operation(

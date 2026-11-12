@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "05809ea7-cd3c-5032-ba30-51bce515b93d",
 		"name": "scene-api",
-		"description": "Coleção da Scene API (Spring Boot). Rode com a aplicação em localhost:8080. Ordem sugerida: pastas 1 a 7, de cima para baixo (cada pasta guarda ids que a seguinte usa). As requisições \"ERRO\" mostram 400, 404, 405, 409 e 415.",
+		"description": "Coleção da Scene API (Spring Boot). Rode com a aplicação em localhost:8080. Ordem sugerida: pastas 1 a 11, de cima para baixo (cada pasta guarda ids que a seguinte usa). Pastas 1 a 7: CRUD, relacionamentos e erros (400, 404, 405, 406, 409 e 415). Pastas 8 a 11: versionamento por cabeçalho, idempotência (422), CORS (403) e rate limiting (429). A API aceita 100 requisições por minuto por IP: o script da coleção espera sozinho quando as fichas estão acabando, por isso o final da execução é mais lento.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -3321,7 +3321,7 @@
 		},
 		{
 			"name": "6. Erros gerais",
-			"description": "Entradas que quebram a API em outras: rota inexistente, método e Content-Type errados, JSON ruim, ordenação inválida. Todas devolvem o mesmo corpo de erro, nunca 500.",
+			"description": "Entradas que quebram a API em outras: rota inexistente, método, Content-Type e Accept errados, JSON ruim, valor de tipo errado, ordenação inválida. Todas devolvem o mesmo corpo de erro, nunca 500.",
 			"item": [
 				{
 					"name": "ERRO 404 - rota inexistente",
@@ -3625,6 +3625,354 @@
 							]
 						}
 					}
+				},
+				{
+					"name": "ERRO 415 - corpo enviado como form-data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 415 Unsupported Media Type', function () { pm.response.to.have.status(415); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(415);",
+									"  pm.expect(j.error).to.eql('Unsupported Media Type');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Banda Form Data",
+									"type": "text"
+								},
+								{
+									"key": "genre",
+									"value": "ROCK",
+									"type": "text"
+								}
+							]
+						},
+						"description": "A API só recebe JSON. Um formulário (form-data) é recusado como qualquer outro formato."
+					}
+				},
+				{
+					"name": "ERRO 406 - Accept não suportado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 406 Not Acceptable', function () { pm.response.to.have.status(406); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(406);",
+									"  pm.expect(j.error).to.eql('Not Acceptable');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/xml"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Banda Somente XML\",\n  \"genre\": \"ROCK\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "A API só responde JSON. A recusa acontece antes de a requisição ser executada: a próxima requisição confere que nada foi gravado."
+					}
+				},
+				{
+					"name": "Search: o POST recusado com 406 não gravou nada",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Nenhum artista foi criado pela requisição recusada', function () {",
+									"  pm.expect(pm.response.json().page.totalElements).to.eql(0);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/search?name=Somente",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"search"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "Somente"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - texto em campo numérico",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});",
+									"pm.test('A resposta aponta o campo com o tipo errado', function () {",
+									"  pm.expect(pm.response.json().details[0].field).to.eql('formedYear');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Banda Ano Texto\",\n  \"genre\": \"ROCK\",\n  \"formedYear\": \"2004\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "O ano veio entre aspas. O JSON é estrito: texto não vira número."
+					}
+				},
+				{
+					"name": "ERRO 400 - número em campo de texto",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});",
+									"pm.test('A resposta aponta o campo com o tipo errado', function () {",
+									"  pm.expect(pm.response.json().details[0].field).to.eql('name');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": 12345,\n  \"genre\": \"ROCK\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "O nome veio sem aspas, como número. Número não vira texto."
+					}
+				},
+				{
+					"name": "ERRO 400 - número no lugar do enum",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});",
+									"pm.test('A resposta aponta o campo com o tipo errado', function () {",
+									"  pm.expect(pm.response.json().details[0].field).to.eql('genre');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Banda Enum Numero\",\n  \"genre\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Sem a checagem, o 1 viraria o segundo gênero da lista. Aqui é recusado."
+					}
+				},
+				{
+					"name": "ERRO 400 - opção de ordenação não suportada",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists?sort=id,asc,ignorecase",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							],
+							"query": [
+								{
+									"key": "sort",
+									"value": "id,asc,ignorecase"
+								}
+							]
+						}
+					}
 				}
 			]
 		},
@@ -3919,6 +4267,1257 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "8. Versionamento (X-API-Version)",
+			"description": "Parte 2. A versão da API é escolhida pelo cabeçalho X-API-Version (1 ou 2; sem o cabeçalho vale a 1). GET /artists/{id} tem duas versões: a 2 agrupa país e ano em origin e traz albumCount e hasProfile. As outras rotas respondem igual nas duas versões.",
+			"item": [
+				{
+					"name": "Find an artist to compare versions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"const artists = pm.response.json()._embedded.artists;",
+									"pm.test('Há pelo menos um artista cadastrado', function () { pm.expect(artists).to.be.an('array').that.is.not.empty; });",
+									"pm.collectionVariables.set('versionArtistId', artists[0].id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists?page=0&size=1&sort=id,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "1"
+								},
+								{
+									"key": "sort",
+									"value": "id,asc"
+								}
+							]
+						},
+						"description": "Guarda em versionArtistId o id do primeiro artista, usado nas requisições seguintes."
+					}
+				},
+				{
+					"name": "Get an artist - sem cabeçalho (versão 1)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Resposta informa a versão usada: X-API-Version: 1', function () {",
+									"  pm.expect(pm.response.headers.get('X-API-Version')).to.eql('1');",
+									"});",
+									"pm.test('Versão 1: country e formedYear soltos, sem origin', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('country');",
+									"  pm.expect(j).to.have.property('formedYear');",
+									"  pm.expect(j).to.not.have.property('origin');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists/{{versionArtistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"{{versionArtistId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get an artist - X-API-Version: 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('X-API-Version: 1 na resposta', function () {",
+									"  pm.expect(pm.response.headers.get('X-API-Version')).to.eql('1');",
+									"});",
+									"pm.test('Mesmo formato de quando o cabeçalho não é enviado', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.have.property('country');",
+									"  pm.expect(j).to.not.have.property('origin');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Version",
+								"value": "1"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists/{{versionArtistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"{{versionArtistId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get an artist - X-API-Version: 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('X-API-Version: 2 na resposta', function () {",
+									"  pm.expect(pm.response.headers.get('X-API-Version')).to.eql('2');",
+									"});",
+									"pm.test('Versão 2: origin (country, formedYear), albumCount e hasProfile', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j).to.not.have.property('country');",
+									"  pm.expect(j.origin).to.have.property('country');",
+									"  pm.expect(j.origin).to.have.property('formedYear');",
+									"  pm.expect(j.albumCount).to.be.a('number');",
+									"  pm.expect(j.hasProfile).to.be.a('boolean');",
+									"});",
+									"pm.test('Links HATEOAS continuam na versão 2', function () {",
+									"  pm.expect(pm.response.json()._links).to.have.property('self');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Version",
+								"value": "2"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists/{{versionArtistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"{{versionArtistId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get all albums - X-API-Version: 2 (rota com uma versão só)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('A rota aceita a versão 2 e responde como na 1', function () {",
+									"  pm.expect(pm.response.headers.get('X-API-Version')).to.eql('2');",
+									"  pm.expect(pm.response.json()._embedded.albums).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Version",
+								"value": "2"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/albums?page=0&size=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"albums"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "1"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - versão inexistente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});",
+									"pm.test('A mensagem cita o cabeçalho X-API-Version', function () {",
+									"  pm.expect(pm.response.json().message).to.include('X-API-Version');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Version",
+								"value": "9"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists/{{versionArtistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists",
+								"{{versionArtistId}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - versão com letras",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-API-Version",
+								"value": "abc"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "9. Idempotência (X-Idempotency-Key)",
+			"description": "Parte 2. Nos POST, o cliente pode mandar uma chave única no cabeçalho X-Idempotency-Key. Repetir a mesma requisição com a mesma chave não cria outro registro: a API devolve a resposta original, com X-Idempotent-Replayed: true. A primeira requisição gera a chave e guarda em idempotencyKey.",
+			"item": [
+				{
+					"name": "Create a playlist with an idempotency key",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Chave nova a cada execução: um UUID gerado pelo próprio Postman",
+									"pm.collectionVariables.set('idempotencyKey', pm.variables.replaceIn('{{$guid}}'));"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+									"pm.test('Primeira vez: X-Idempotent-Replayed: false', function () {",
+									"  pm.expect(pm.response.headers.get('X-Idempotent-Replayed')).to.eql('false');",
+									"});",
+									"if (pm.response.code === 201) { pm.collectionVariables.set('idempotentPlaylistId', pm.response.json().id); }"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Idempotency-Key",
+								"value": "{{idempotencyKey}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/playlists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Playlist Idempotente\",\n  \"description\": \"Criada com X-Idempotency-Key\",\n  \"visibility\": \"PRIVATE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Gera uma chave (UUID) no Pre-request Script e guarda o id criado em idempotentPlaylistId."
+					}
+				},
+				{
+					"name": "Repeat the same request (replay)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+									"pm.test('Repetição: X-Idempotent-Replayed: true', function () {",
+									"  pm.expect(pm.response.headers.get('X-Idempotent-Replayed')).to.eql('true');",
+									"});",
+									"pm.test('É a resposta original: mesmo id e mesmo Location', function () {",
+									"  const id = pm.collectionVariables.get('idempotentPlaylistId');",
+									"  pm.expect(pm.response.json().id).to.eql(Number(id));",
+									"  pm.expect(pm.response.headers.get('Location')).to.include('/playlists/' + id);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Idempotency-Key",
+								"value": "{{idempotencyKey}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/playlists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Playlist Idempotente\",\n  \"description\": \"Criada com X-Idempotency-Key\",\n  \"visibility\": \"PRIVATE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Mesma chave e mesmo corpo: a API não cria outra playlist, só devolve a resposta guardada."
+					}
+				},
+				{
+					"name": "Search: só uma playlist foi criada",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Dois POST com a mesma chave criaram um registro só', function () {",
+									"  pm.expect(pm.response.json().page.totalElements).to.eql(1);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/search?name=Idempotente",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"search"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "Idempotente"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 422 - mesma chave com corpo diferente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 422 Unprocessable Content', function () { pm.response.to.have.status(422); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(422);",
+									"  pm.expect(j.error).to.eql('Unprocessable Content');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Idempotency-Key",
+								"value": "{{idempotencyKey}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/playlists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Outra Playlist\",\n  \"visibility\": \"PUBLIC\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "A chave identifica uma operação. Usá-la em uma requisição diferente é erro do cliente."
+					}
+				},
+				{
+					"name": "ERRO 422 - mesma chave em outra rota",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 422 Unprocessable Content', function () { pm.response.to.have.status(422); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(422);",
+									"  pm.expect(j.error).to.eql('Unprocessable Content');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Idempotency-Key",
+								"value": "{{idempotencyKey}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Banda da Chave Repetida\",\n  \"genre\": \"ROCK\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					}
+				},
+				{
+					"name": "ERRO 400 - chave com formato inválido",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 400 Bad Request', function () { pm.response.to.have.status(400); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(400);",
+									"  pm.expect(j.error).to.eql('Bad Request');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Idempotency-Key",
+								"value": "chave com espaco!"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/playlists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Playlist Chave Ruim\",\n  \"visibility\": \"PUBLIC\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "A chave aceita de 1 a 100 letras, números, ponto, hífen, dois-pontos e underline."
+					}
+				},
+				{
+					"name": "ERRO 409 - sem a chave, o POST repetido conflita",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 409 Conflict', function () { pm.response.to.have.status(409); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(409);",
+									"  pm.expect(j.error).to.eql('Conflict');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/playlists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Playlist Idempotente\",\n  \"description\": \"Criada com X-Idempotency-Key\",\n  \"visibility\": \"PRIVATE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"description": "Mesmo corpo, mas sem X-Idempotency-Key: a API trata como requisição nova e o nome duplicado dá 409."
+					}
+				},
+				{
+					"name": "Find a track to add",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"const tracks = pm.response.json()._embedded.tracks;",
+									"pm.test('Há pelo menos uma faixa cadastrada', function () { pm.expect(tracks).to.be.an('array').that.is.not.empty; });",
+									"pm.collectionVariables.set('idempotentTrackId', tracks[0].id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tracks?page=0&size=1&sort=id,asc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tracks"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "1"
+								},
+								{
+									"key": "sort",
+									"value": "id,asc"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Add a track with an idempotency key",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+									"pm.test('Primeira vez: X-Idempotent-Replayed: false e 1 faixa na playlist', function () {",
+									"  pm.expect(pm.response.headers.get('X-Idempotent-Replayed')).to.eql('false');",
+									"  pm.expect(pm.response.json().trackCount).to.eql(1);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Idempotency-Key",
+								"value": "{{idempotencyKey}}-faixa"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{idempotentPlaylistId}}/tracks/{{idempotentTrackId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{idempotentPlaylistId}}",
+								"tracks",
+								"{{idempotentTrackId}}"
+							]
+						},
+						"description": "POST sem corpo também aceita a chave. Aqui a chave é a da pasta com o sufixo -faixa."
+					}
+				},
+				{
+					"name": "Repeat the add (replay)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+									"pm.test('Repetição: X-Idempotent-Replayed: true e a playlist continua com 1 faixa', function () {",
+									"  pm.expect(pm.response.headers.get('X-Idempotent-Replayed')).to.eql('true');",
+									"  pm.expect(pm.response.json().trackCount).to.eql(1);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Idempotency-Key",
+								"value": "{{idempotencyKey}}-faixa"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{idempotentPlaylistId}}/tracks/{{idempotentTrackId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{idempotentPlaylistId}}",
+								"tracks",
+								"{{idempotentTrackId}}"
+							]
+						},
+						"description": "Sem a chave esta repetição daria 409 (faixa já está na playlist)."
+					}
+				},
+				{
+					"name": "Delete the idempotent playlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 204 No Content', function () { pm.response.to.have.status(204); });"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/playlists/{{idempotentPlaylistId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"playlists",
+								"{{idempotentPlaylistId}}"
+							]
+						},
+						"description": "Limpeza: remove a playlist criada nesta pasta."
+					}
+				}
+			]
+		},
+		{
+			"name": "10. CORS",
+			"description": "Parte 2. O navegador manda no cabeçalho Origin o endereço da página que está chamando a API. Só as origens configuradas em scene.cors.allowed-origins (a da página de demonstração é http://localhost:3000) são aceitas; as outras recebem 403 Forbidden. Aqui o Origin é escrito à mão para simular o navegador.",
+			"item": [
+				{
+					"name": "Request from an allowed origin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Access-Control-Allow-Origin repete a origem permitida', function () {",
+									"  pm.expect(pm.response.headers.get('Access-Control-Allow-Origin')).to.eql('http://localhost:3000');",
+									"});",
+									"pm.test('Access-Control-Expose-Headers libera os cabeçalhos da API para o JavaScript', function () {",
+									"  pm.expect(pm.response.headers.get('Access-Control-Expose-Headers')).to.include('X-RateLimit-Remaining');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Origin",
+								"value": "http://localhost:3000"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists?page=0&size=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "1"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 403 - origem não permitida",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 403 Forbidden', function () { pm.response.to.have.status(403); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(403);",
+									"  pm.expect(j.error).to.eql('Forbidden');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});",
+									"pm.test('Sem Access-Control-Allow-Origin: o navegador bloquearia a resposta', function () {",
+									"  pm.expect(pm.response.headers.has('Access-Control-Allow-Origin')).to.be.false;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Origin",
+								"value": "http://site-nao-autorizado.com"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists?page=0&size=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "1"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Preflight (OPTIONS) from an allowed origin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Métodos liberados: GET, POST, PUT, DELETE, OPTIONS', function () {",
+									"  pm.expect(pm.response.headers.get('Access-Control-Allow-Methods')).to.eql('GET,POST,PUT,DELETE,OPTIONS');",
+									"});",
+									"pm.test('Cabeçalhos liberados incluem X-Idempotency-Key e X-API-Version', function () {",
+									"  const allowed = pm.response.headers.get('Access-Control-Allow-Headers').toLowerCase();",
+									"  pm.expect(allowed).to.include('x-idempotency-key');",
+									"  pm.expect(allowed).to.include('x-api-version');",
+									"});",
+									"pm.test('O navegador pode guardar a resposta do preflight por 1 hora (Access-Control-Max-Age: 3600)', function () {",
+									"  pm.expect(pm.response.headers.get('Access-Control-Max-Age')).to.eql('3600');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "OPTIONS",
+						"header": [
+							{
+								"key": "Origin",
+								"value": "http://localhost:3000"
+							},
+							{
+								"key": "Access-Control-Request-Method",
+								"value": "POST"
+							},
+							{
+								"key": "Access-Control-Request-Headers",
+								"value": "content-type, x-idempotency-key, x-api-version"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						},
+						"description": "Antes de um POST, PUT ou DELETE vindo de outra origem, o navegador pergunta à API se pode. Essa pergunta é o preflight."
+					}
+				},
+				{
+					"name": "ERRO 403 - preflight com método não liberado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 403 Forbidden', function () { pm.response.to.have.status(403); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(403);",
+									"  pm.expect(j.error).to.eql('Forbidden');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});",
+									"pm.test('A mensagem diz qual método foi recusado', function () {",
+									"  pm.expect(pm.response.json().message).to.include('PATCH');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "OPTIONS",
+						"header": [
+							{
+								"key": "Origin",
+								"value": "http://localhost:3000"
+							},
+							{
+								"key": "Access-Control-Request-Method",
+								"value": "PATCH"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/artists",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							]
+						}
+					}
+				},
+				{
+					"name": "Request without Origin (sem checagem de CORS)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('Sem Origin não há cabeçalhos de CORS na resposta', function () {",
+									"  pm.expect(pm.response.headers.has('Access-Control-Allow-Origin')).to.be.false;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists?page=0&size=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Postman, curl e o próprio Swagger UI (mesma origem da API) não passam pela checagem de CORS."
+					}
+				}
+			]
+		},
+		{
+			"name": "11. Rate limiting (token bucket)",
+			"description": "Parte 2. Cada IP tem um balde de 100 fichas; cada requisição gasta uma e o balde recebe 100 fichas por minuto. Sem fichas a resposta é 429 Too Many Requests, com Retry-After. Esta pasta fica por último porque esvazia o balde.",
+			"item": [
+				{
+					"name": "Rate limit headers on a normal response",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('X-RateLimit-Limit, X-RateLimit-Remaining e X-RateLimit-Reset presentes', function () {",
+									"  const limit = Number(pm.response.headers.get('X-RateLimit-Limit'));",
+									"  const remaining = Number(pm.response.headers.get('X-RateLimit-Remaining'));",
+									"  const reset = Number(pm.response.headers.get('X-RateLimit-Reset'));",
+									"  pm.expect(limit).to.be.above(0);",
+									"  pm.expect(remaining).to.be.within(0, limit - 1);",
+									"  pm.expect(reset).to.be.at.least(1);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists?page=0&size=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "1"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "ERRO 429 - limite excedido",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Esvazia o balde: dispara de uma vez mais requisições do que a capacidade.",
+									"// O Postman só envia a requisição desta aba depois que todas as respostas chegam, então ela encontra o balde vazio.",
+									"const capacity = Number(pm.variables.get('rateLimit')) || 100;",
+									"const total = capacity + 20;",
+									"const address = pm.variables.replaceIn('{{baseUrl}}/artists?page=0&size=1');",
+									"let answered = 0;",
+									"let blocked = 0;",
+									"for (let i = 0; i < total; i++) {",
+									"    pm.sendRequest(address, function (error, response) {",
+									"        answered++;",
+									"        if (!error && response.code === 429) { blocked++; }",
+									"        if (answered === total) {",
+									"            console.log('Rajada de ' + total + ' requisições: ' + (total - blocked) + ' aceitas e ' + blocked + ' recusadas com 429');",
+									"        }",
+									"    });",
+									"}"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 429 Too Many Requests', function () { pm.response.to.have.status(429); });",
+									"pm.test('Corpo de erro padronizado (status, error, message, path, timestamp, details)', function () {",
+									"  const j = pm.response.json();",
+									"  pm.expect(j.status).to.eql(429);",
+									"  pm.expect(j.error).to.eql('Too Many Requests');",
+									"  pm.expect(j.message).to.be.a('string').and.not.empty;",
+									"  pm.expect(j).to.have.property('path');",
+									"  pm.expect(j).to.have.property('timestamp');",
+									"  pm.expect(j.details).to.be.an('array');",
+									"});",
+									"pm.test('Retry-After diz quantos segundos esperar', function () {",
+									"  pm.expect(Number(pm.response.headers.get('Retry-After'))).to.be.at.least(1);",
+									"});",
+									"pm.test('X-RateLimit-Remaining: 0', function () {",
+									"  pm.expect(pm.response.headers.get('X-RateLimit-Remaining')).to.eql('0');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists?page=0&size=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "1"
+								}
+							]
+						},
+						"description": "O Pre-request Script dispara uma rajada maior que a capacidade do balde. A requisição em si chega com o balde vazio e recebe 429."
+					}
+				},
+				{
+					"name": "After waiting, requests are accepted again",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
+									"pm.test('As fichas foram repostas com o tempo', function () {",
+									"  pm.expect(Number(pm.response.headers.get('X-RateLimit-Remaining'))).to.be.at.least(0);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/artists?page=0&size=1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"artists"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "1"
+								}
+							]
+						},
+						"description": "O script da coleção espera a reposição das fichas antes de enviar (veja o Console do Postman)."
+					}
+				}
+			]
 		}
 	],
 	"variable": [
@@ -3949,6 +5548,77 @@
 		{
 			"key": "playlistId",
 			"value": ""
+		},
+		{
+			"key": "versionArtistId",
+			"value": ""
+		},
+		{
+			"key": "idempotencyKey",
+			"value": ""
+		},
+		{
+			"key": "idempotentPlaylistId",
+			"value": ""
+		},
+		{
+			"key": "idempotentTrackId",
+			"value": ""
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// A API aceita 100 requisições por minuto por IP (rate limiting por token bucket) e a coleção inteira passa disso.",
+					"// Este script lê quantas fichas restam (cabeçalhos X-RateLimit-*) e espera a reposição quando elas estão acabando,",
+					"// para a coleção rodar de uma vez sem receber 429 fora da pasta 11.",
+					"const RESERVE = 2; // fichas que precisam estar no balde antes de enviar",
+					"",
+					"function waitForTokens(remaining, secondsPerToken) {",
+					"    if (remaining >= RESERVE) { return; }",
+					"    const seconds = (RESERVE - remaining) * secondsPerToken;",
+					"    console.log('Rate limit: esperando ' + seconds.toFixed(1) + ' s pela reposição de fichas');",
+					"    setTimeout(function () {}, Math.ceil(seconds * 1000));",
+					"    pm.variables.set('rateRemaining', RESERVE);",
+					"}",
+					"",
+					"if (pm.variables.get('rateRemaining') !== undefined) {",
+					"    waitForTokens(Number(pm.variables.get('rateRemaining')), Number(pm.variables.get('rateSecondsPerToken')));",
+					"} else {",
+					"    // Primeira requisição da execução: pergunta à API como está o balde",
+					"    pm.sendRequest(pm.variables.replaceIn('{{baseUrl}}/artists?page=0&size=1'), function (error, response) {",
+					"        if (error || !response.headers.has('X-RateLimit-Limit')) { return; }",
+					"        const limit = Number(response.headers.get('X-RateLimit-Limit'));",
+					"        const remaining = Number(response.headers.get('X-RateLimit-Remaining'));",
+					"        const reset = Number(response.headers.get('X-RateLimit-Reset'));",
+					"        const secondsPerToken = limit > remaining ? reset / (limit - remaining) : 1;",
+					"        pm.variables.set('rateLimit', limit);",
+					"        pm.variables.set('rateSecondsPerToken', secondsPerToken);",
+					"        waitForTokens(remaining, secondsPerToken);",
+					"    });",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Depois de cada resposta, guarda quantas fichas sobraram no balde (usado pelo Pre-request Script da coleção)",
+					"if (pm.response.headers.has('X-RateLimit-Limit')) {",
+					"    const limit = Number(pm.response.headers.get('X-RateLimit-Limit'));",
+					"    const remaining = Number(pm.response.headers.get('X-RateLimit-Remaining'));",
+					"    const reset = Number(pm.response.headers.get('X-RateLimit-Reset'));",
+					"    pm.variables.set('rateLimit', limit);",
+					"    pm.variables.set('rateRemaining', remaining);",
+					"    if (limit > remaining) { pm.variables.set('rateSecondsPerToken', reset / (limit - remaining)); }",
+					"}"
+				]
+			}
 		}
 	]
 }

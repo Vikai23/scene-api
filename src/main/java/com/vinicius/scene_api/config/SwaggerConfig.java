@@ -1,5 +1,8 @@
 package com.vinicius.scene_api.config;
 
+import com.vinicius.scene_api.idempotency.IdempotencyProperties;
+import com.vinicius.scene_api.ratelimit.RateLimitProperties;
+import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.info.Contact;
@@ -20,6 +23,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 public class SwaggerConfig {
@@ -64,36 +68,80 @@ public class SwaggerConfig {
             Cada recurso devolve `_links` com `self`, `update`, `delete` e links para os recursos relacionados. \
             As listagens vêm em `_embedded`, com `page` (tamanho, total de itens e de páginas) e links de navegação (`first`, `prev`, `next`, `last`).
 
+            ### Versionamento (cabeçalho `X-API-Version`)
+
+            A API tem as versões **1** (padrão) e **2**, escolhidas no cabeçalho `X-API-Version`. Sem o cabeçalho vale a versão 1 \
+            e um valor diferente de 1 e 2 devolve **400 Bad Request**. A resposta traz o mesmo cabeçalho com a versão que atendeu. \
+            Hoje só `GET /artists/{id}` muda entre as versões: na 2, `country` e `formedYear` passam para o objeto `origin` e entram \
+            `albumCount` e `hasProfile`. Nas demais rotas as duas versões respondem igual.
+
+            ### Idempotência (cabeçalho `X-Idempotency-Key`)
+
+            Todo `POST` aceita o cabeçalho opcional `X-Idempotency-Key` (de 1 a 100 caracteres entre letras, números e `. _ : -`; o ideal é um UUID). \
+            A API guarda a chave e a resposta por %s. Repetir a mesma requisição com a mesma chave **não** cria nada de novo: \
+            volta a resposta original, com `X-Idempotent-Replayed: true`. A mesma chave em uma requisição diferente devolve \
+            **422 Unprocessable Content**. Sem o cabeçalho, o POST funciona normalmente.
+
+            ### Rate limiting (token bucket)
+
+            Cada IP tem um balde com **%d fichas**. Cada chamada a uma rota da API gasta uma ficha e o balde recebe %d fichas a cada %s. \
+            Com o balde vazio a resposta é **429 Too Many Requests**, com o cabeçalho `Retry-After` (segundos até a próxima ficha). \
+            Toda resposta informa o saldo em `X-RateLimit-Limit` (capacidade), `X-RateLimit-Remaining` (fichas restantes) e \
+            `X-RateLimit-Reset` (segundos até o balde encher de novo).
+
+            ### CORS
+
+            Uma página de outra origem só consegue chamar a API pelo navegador se a origem estiver na lista: %s. \
+            Métodos aceitos: `GET`, `POST`, `PUT`, `DELETE` e `OPTIONS` (a consulta prévia, o *preflight*). Outra origem recebe \
+            **403 Forbidden**. Chamadas sem o cabeçalho `Origin` (Postman, curl e este Swagger UI) não passam por essa checagem. \
+            Para ver na prática, o projeto traz uma página de demonstração separada da API (pasta `web/` do repositório), \
+            que roda em `http://localhost:3000` e consome estas rotas pelo navegador.
+
             ### Formato dos erros
 
             Todo erro tem o mesmo corpo (`ApiError`): `status`, `error` (nome oficial do status HTTP), `message`, `path`, `timestamp` e `details` \
-            (problemas campo a campo, preenchido nos erros de validação).
+            (problemas campo a campo, preenchido nos erros de validação). Cada rota lista, em *Responses*, todos os erros que podem acontecer nela.
 
             | Status | Quando acontece |
             |---|---|
             | **200 OK** | Consulta ou atualização feita com sucesso |
             | **201 Created** | Recurso criado (o cabeçalho `Location` aponta para ele) |
             | **204 No Content** | Recurso removido |
-            | **400 Bad Request** | Dados inválidos, JSON malformado, id não numérico, enum inexistente ou campo de ordenação inexistente |
+            | **400 Bad Request** | Dados inválidos, JSON malformado ou com valor de tipo errado, id não numérico, enum inexistente, paginação ou ordenação inválida, versão da API inexistente ou chave de idempotência fora do formato |
+            | **403 Forbidden** | Requisição de uma origem não permitida pelo CORS |
             | **404 Not Found** | Recurso ou rota inexistente |
             | **405 Method Not Allowed** | Método HTTP não aceito na rota |
-            | **409 Conflict** | Registro duplicado (ex.: nome de artista já cadastrado) |
+            | **406 Not Acceptable** | Cabeçalho `Accept` que só aceita um formato diferente de JSON (a requisição não é executada) |
+            | **409 Conflict** | Registro duplicado (ex.: nome de artista já cadastrado) ou requisição simultânea com a mesma chave de idempotência |
             | **415 Unsupported Media Type** | Corpo enviado sem ser `application/json` |
-            | **500 Internal Server Error** | Erro inesperado no servidor |
+            | **422 Unprocessable Content** | Chave de idempotência reaproveitada em uma requisição diferente |
+            | **429 Too Many Requests** | Limite de requisições por IP excedido |
+
+            Entrada inválida do cliente sempre resulta em um erro 4xx. O **500 Internal Server Error** fica reservado para falhas \
+            inesperadas do próprio servidor e, por isso, não aparece na lista de respostas das rotas.
             """;
 
     @Bean
-    public OpenAPI sceneOpenAPI() {
+    public OpenAPI sceneOpenAPI(RateLimitProperties rateLimit, IdempotencyProperties idempotency, CorsProperties cors) {
+        String description = DESCRIPTION.formatted(
+                OpenApiTexts.describe(idempotency.ttl()),
+                rateLimit.capacity(), rateLimit.refillTokens(), OpenApiTexts.describe(rateLimit.refillPeriod()),
+                cors.allowedOrigins().stream().map(origin -> "`" + origin + "`").collect(Collectors.joining(", ")));
         return new OpenAPI()
                 .info(new Info()
                         .title("Scene API")
-                        .version("1.0.0")
-                        .description(DESCRIPTION)
+                        .version("2.0.0")
+                        .description(description)
+                        .termsOfService("/termos-de-uso.html")
                         .contact(new Contact()
-                                .name("Vinícius – Web Services (Senac TSI)"))
+                                .name("Vinícius (TSI Senac)")
+                                .url("https://github.com/Vikai23"))
                         .license(new License()
                                 .name("Apache 2.0")
                                 .url("https://www.apache.org/licenses/LICENSE-2.0")))
+                .externalDocs(new ExternalDocumentation()
+                        .description("Repositório do projeto no GitHub (README com instruções e coleção do Postman)")
+                        .url("https://github.com/Vikai23/scene-api"))
                 .tags(List.of(
                         new Tag().name("Artistas").description(
                                 "Cadastro de artistas e bandas. Um artista tem vários álbuns (relação 1:N) e no máximo um perfil (relação 1:1)."),
