@@ -174,7 +174,7 @@ public class PlaylistController {
                     + "Para colocar faixas nela, use POST /playlists/{playlistId}/tracks/{trackId}."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Created – playlist criada; o cabeçalho Location aponta para o novo recurso"),
+            @ApiResponse(responseCode = "201", description = "Created – playlist criada; o header Location aponta para o novo recurso"),
             @ApiResponse(responseCode = "400", description = "Bad Request – dados inválidos (nome em branco ou fora de 2 a 100 caracteres, descrição longa demais, visibilidade inexistente) ou JSON malformado",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class),
@@ -251,7 +251,7 @@ public class PlaylistController {
 
     @Operation(
             summary = "Adiciona uma faixa à playlist",
-            description = "Coloca uma faixa existente na playlist (relação N:N). Devolve a playlist atualizada; o cabeçalho Location aponta para a lista de faixas dela."
+            description = "Coloca uma faixa existente na playlist (relação N:N). Devolve a playlist atualizada; o header Location aponta para a lista de faixas dela."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Created – faixa adicionada à playlist"),

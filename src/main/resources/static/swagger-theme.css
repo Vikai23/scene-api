@@ -117,15 +117,45 @@ html body { background: transparent !important; color: var(--ink); font-family: 
 }
 .swagger-ui .topbar .topbar-wrapper::after {
   content: "online now";
-  margin-left: auto;
   padding-left: 18px;
   font: 13px/1 var(--f-zine);
   white-space: nowrap;
   color: var(--paper);
   background: radial-gradient(circle at 5px 50%, #ff1f3d 0 3.5px, transparent 4.2px) no-repeat;
 }
-/* a barra "Explore" e o botão de modo escuro não fazem sentido aqui: a API é uma só e o tema é fixo */
-.swagger-ui .topbar .download-url-wrapper, .swagger-ui .topbar .dark-mode-toggle { display: none !important; }
+/* o botão de modo escuro não faz sentido aqui: o tema é fixo */
+.swagger-ui .topbar .dark-mode-toggle { display: none !important; }
+/* seletor "Versão da API": uma documentação por versão (v1 e v2), cada uma já preenchendo o header
+   X-API-Version. O Swagger UI escreve "Select a definition"; aqui o rótulo vira "Versão da API" */
+.swagger-ui .topbar .download-url-wrapper { display: flex !important; flex: 0 1 auto; margin-left: auto; }
+.swagger-ui .topbar .download-url-wrapper .download-url-input,
+.swagger-ui .topbar .download-url-wrapper .download-url-button { display: none !important; }
+.swagger-ui .topbar .download-url-wrapper .select-label {
+  display: flex; align-items: center; gap: 10px;
+  width: auto; max-width: none; margin: 0;
+  color: var(--paper);
+}
+.swagger-ui .topbar .download-url-wrapper .select-label > span { display: none; }
+.swagger-ui .topbar .download-url-wrapper .select-label::before {
+  content: "Versão da API";
+  font: 13px/1 var(--f-zine); white-space: nowrap;
+  color: var(--on-black);
+}
+/* os campos do Swagger usam !important (papel claro); no topo preto o seletor fica preto com borda rosa */
+.swagger-ui .topbar .download-url-wrapper .select-label select {
+  min-width: 190px; padding: 7px 34px 7px 12px;
+  border: 2px solid var(--hot) !important; border-radius: 0 !important;
+  box-shadow: 3px 3px 0 var(--cyan) !important;
+  background: #000 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23ff2ea6' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 11px center / 12px 8px;
+  background-color: #000 !important;
+  color: var(--paper) !important;
+  font: 700 14px/1.2 var(--f-mono) !important;
+  appearance: none; -webkit-appearance: none;
+}
+.swagger-ui .topbar .download-url-wrapper .select-label select:hover { background-color: #2a0019 !important; }
+.swagger-ui .topbar .download-url-wrapper .select-label select:focus,
+.swagger-ui .topbar .download-url-wrapper .select-label select:focus-visible { outline: 3px solid var(--cyan) !important; outline-offset: 2px; }
+.swagger-ui .topbar .download-url-wrapper .select-label select option { background: #000; color: var(--paper); }
 .swagger-ui .topbar::after {
   content: var(--ml-ticker) var(--ml-ticker) var(--ml-ticker) var(--ml-ticker);
   display: block;
@@ -189,7 +219,7 @@ html body { background: transparent !important; color: var(--ink); font-family: 
   text-shadow: -3px 0 0 var(--blood), 3px 0 0 rgba(255, 255, 255, .22);
   animation: ml-title 9s steps(1, end) infinite;
 }
-/* duas cópias do título, cortadas em tiras, formam o glitch (rajadas curtas a cada 9 s) */
+/* duas cópias do título, cortadas em tiras, formam o glitch (bursts curtos a cada 9 s) */
 .swagger-ui .info .title::before, .swagger-ui .info .title::after {
   content: "Scene API";
   position: absolute; left: 0; top: 0; width: 100%;
@@ -306,7 +336,7 @@ html body { background: transparent !important; color: var(--ink); font-family: 
 }
 .swagger-ui .info .renderedMarkdown table td { padding: 9px 12px; border-top: 1px solid var(--rule-soft); vertical-align: top; font-size: 14px; }
 .swagger-ui .info .renderedMarkdown table td code { white-space: nowrap; }
-/* nomes de cabeçalho e endereços (ex.: X-RateLimit-Remaining) não se partem no hífen de uma linha para a outra */
+/* nomes de header e endereços (ex.: X-RateLimit-Remaining) não se partem no hífen de uma linha para a outra */
 .swagger-ui .info .renderedMarkdown p code, .swagger-ui .info .renderedMarkdown li code { white-space: nowrap; }
 /* a primeira coluna é o nome da linha (ex.: "422 Unprocessable Content"): em tela larga não quebra */
 @media (min-width: 900px) {
@@ -689,6 +719,8 @@ body::after {
   .swagger-ui h3.opblock-tag { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "idx btn" "name btn" "desc desc"; padding: 12px 14px 14px !important; }
   .swagger-ui .topbar a.link::after { font-size: 22px; }
   .swagger-ui .topbar .topbar-wrapper::after { display: none; }
+  .swagger-ui .topbar .topbar-wrapper { flex-wrap: wrap; row-gap: 10px; }
+  .swagger-ui .topbar .download-url-wrapper .select-label select { min-width: 160px; }
   .swagger-ui .operation-tag-content { padding: 12px 8px 16px; }
   .swagger-ui .opblock .opblock-summary { flex-wrap: wrap; padding-left: 18px !important; }
   .swagger-ui .opblock .opblock-description-wrapper, .swagger-ui .opblock .opblock-external-docs-wrapper { padding: 12px 16px; }

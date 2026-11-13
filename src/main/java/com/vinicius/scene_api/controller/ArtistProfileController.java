@@ -143,7 +143,7 @@ public class ArtistProfileController {
                     + "Opcionais: hometown (somente letras), website (http:// ou https://) e instagram (sem o @)."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Created – perfil criado; o cabeçalho Location aponta para o novo recurso"),
+            @ApiResponse(responseCode = "201", description = "Created – perfil criado; o header Location aponta para o novo recurso"),
             @ApiResponse(responseCode = "400", description = "Bad Request – dados inválidos (biografia curta demais, cidade com números, site sem http/https, Instagram inválido...) ou JSON malformado",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class),

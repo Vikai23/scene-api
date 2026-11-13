@@ -73,7 +73,7 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage(), request, List.of());
     }
 
-    /** Rate limiting: o cliente gastou todas as fichas. O cabeçalho Retry-After diz quanto esperar. */
+    /** Rate limiting: o cliente consumiu todos os tokens. O header Retry-After diz quanto esperar. */
     @ExceptionHandler(RateLimitExceededException.class)
     public ResponseEntity<ApiError> handleRateLimit(RateLimitExceededException ex, HttpServletRequest request) {
         ApiError body = new ApiError(HttpStatus.TOO_MANY_REQUESTS.value(), HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
@@ -178,12 +178,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, message.toString(), request, List.of());
     }
 
-    /** Cabeçalho X-API-Version com uma versão que a API não tem (ou que nem é um número de versão). */
+    /** Header X-API-Version com uma versão que a API não tem (ou que nem é um número de versão). */
     @ExceptionHandler(InvalidApiVersionException.class)
     public ResponseEntity<ApiError> handleInvalidApiVersion(InvalidApiVersionException ex, HttpServletRequest request) {
         String message = "Versão da API não suportada: '" + request.getHeader(ApiVersionConfig.HEADER) + "'. "
-                + "Use o cabeçalho " + ApiVersionConfig.HEADER + " com " + ApiVersionConfig.V1 + " ou " + ApiVersionConfig.V2
-                + " (sem o cabeçalho vale a versão " + ApiVersionConfig.V1 + ").";
+                + "Use o header " + ApiVersionConfig.HEADER + " com " + ApiVersionConfig.V1 + " ou " + ApiVersionConfig.V2
+                + " (sem o header vale a versão " + ApiVersionConfig.V1 + ").";
         return build(HttpStatus.BAD_REQUEST, message, request, List.of());
     }
 

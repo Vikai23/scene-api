@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Base dos testes de integração: sobe a aplicação inteira em uma porta livre e faz requisições HTTP de
- * verdade, como o Postman faria. Assim os testes passam por tudo: filtro de CORS, interceptadores,
+ * verdade, como o Postman faria. Assim os testes passam por tudo: filtro de CORS, interceptors,
  * controllers, services e banco.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
@@ -47,7 +47,7 @@ abstract class IntegrationTestSupport {
     }
 
     /**
-     * Envia uma requisição. Os cabeçalhos vêm em pares: nome, valor, nome, valor...
+     * Envia uma requisição. Os headers vêm em pares: nome, valor, nome, valor...
      * Quando há corpo, o Content-Type é application/json, a não ser que o teste informe outro.
      */
     protected HttpResponse<String> send(String method, String path, String json, String... headers) {
@@ -76,7 +76,7 @@ abstract class IntegrationTestSupport {
         return jsonMapper.readTree(response.body());
     }
 
-    /** Valor de um cabeçalho da resposta, ou {@code null} se ele não veio. */
+    /** Valor de um header da resposta, ou {@code null} se ele não veio. */
     protected String header(HttpResponse<String> response, String name) {
         return response.headers().firstValue(name).orElse(null);
     }

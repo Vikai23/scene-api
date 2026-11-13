@@ -12,22 +12,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * CORS: só as origens de scene.cors.allowed-origins podem chamar a API pelo navegador.
- * O navegador avisa de onde vem a página no cabeçalho Origin; aqui o teste manda esse cabeçalho à mão.
+ * O navegador avisa de onde vem a página no header Origin; aqui o teste manda esse header à mão.
  */
 class CorsIntegrationTest extends IntegrationTestSupport {
 
-    private static final String ALLOWED_ORIGIN = "http://localhost:3000";
+    private static final String ALLOWED_ORIGIN = "http://localhost:4200";
     private static final String UNKNOWN_ORIGIN = "http://site-nao-autorizado.com";
 
     @Test
-    @DisplayName("Origem permitida recebe os cabeçalhos de CORS na resposta")
+    @DisplayName("Origem permitida recebe os headers de CORS na resposta")
     void allowedOriginGetsCorsHeaders() {
         HttpResponse<String> response = get("/artists", "Origin", ALLOWED_ORIGIN);
 
         assertEquals(200, response.statusCode());
         assertEquals(ALLOWED_ORIGIN, header(response, "Access-Control-Allow-Origin"));
         assertTrue(header(response, "Access-Control-Expose-Headers").contains("X-RateLimit-Remaining"),
-                "o navegador só deixa o JavaScript ler os cabeçalhos expostos aqui");
+                "o navegador só deixa o JavaScript ler os headers expostos aqui");
     }
 
     @Test
@@ -43,7 +43,7 @@ class CorsIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("A consulta prévia (preflight) informa os métodos e cabeçalhos liberados")
+    @DisplayName("O preflight informa os métodos e headers liberados")
     void preflightAnnouncesMethodsAndHeaders() {
         HttpResponse<String> response = send("OPTIONS", "/artists", null,
                 "Origin", ALLOWED_ORIGIN,

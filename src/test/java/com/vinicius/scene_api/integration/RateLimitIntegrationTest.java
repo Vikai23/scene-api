@@ -11,8 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Rate limiting de ponta a ponta. A aplicação sobe com um balde pequeno (3 fichas) que quase não repõe
- * (1 ficha por hora), então dá para estourar o limite em poucas chamadas e de forma previsível.
+ * Rate limiting de ponta a ponta. A aplicação sobe com um bucket pequeno (3 tokens) que quase não repõe
+ * (1 token por hora), então dá para estourar o limite em poucas chamadas e de forma previsível.
  */
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:rate-limit-tests",
@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class RateLimitIntegrationTest extends IntegrationTestSupport {
 
     @Test
-    @DisplayName("Depois de gastar as fichas do balde, a API responde 429 Too Many Requests com Retry-After")
+    @DisplayName("Depois de consumir os tokens do bucket, a API responde 429 Too Many Requests com Retry-After")
     void blocksWhenTheBucketIsEmpty() {
         HttpResponse<String> first = get("/artists");
         HttpResponse<String> second = get("/artists");

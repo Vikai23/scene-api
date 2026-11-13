@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Guarda um {@link TokenBucket} por cliente (IP) e decide se cada requisição pode passar.
- * Os baldes ficam em memória, então os contadores zeram quando a aplicação reinicia.
+ * Os buckets ficam em memória, então os contadores zeram quando a aplicação reinicia.
  */
 @Component
 public class RateLimiter {
@@ -23,7 +23,7 @@ public class RateLimiter {
         this.properties = properties;
     }
 
-    /** Gasta uma ficha do balde do cliente, criando o balde (cheio) na primeira requisição dele. */
+    /** Consome um token do bucket do cliente, criando o bucket (cheio) na primeira requisição dele. */
     public RateLimitResult tryConsume(String clientKey) {
         long now = System.nanoTime();
         TokenBucket bucket = buckets.computeIfAbsent(clientKey, key -> new TokenBucket(
@@ -34,8 +34,8 @@ public class RateLimiter {
     }
 
     /**
-     * No máximo uma vez por minuto, descarta os baldes que já encheram de novo.
-     * Sem isso o mapa cresceria para sempre, com um balde para cada IP que já chamou a API.
+     * No máximo uma vez por minuto, descarta os buckets que já encheram de novo.
+     * Sem isso o mapa cresceria para sempre, com um bucket para cada IP que já chamou a API.
      */
     private void purgeFullBuckets(long now) {
         if (now - lastPurgeNanos < PURGE_INTERVAL_NANOS) {

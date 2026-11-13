@@ -161,7 +161,7 @@ public class AlbumController {
                     + "releaseYear (1900 a 2100) e type. Opcional: label (gravadora)."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Created – álbum criado; o cabeçalho Location aponta para o novo recurso"),
+            @ApiResponse(responseCode = "201", description = "Created – álbum criado; o header Location aponta para o novo recurso"),
             @ApiResponse(responseCode = "400", description = "Bad Request – dados inválidos (título em branco ou com símbolos proibidos, ano fora do intervalo, formato inexistente...) ou JSON malformado",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class),

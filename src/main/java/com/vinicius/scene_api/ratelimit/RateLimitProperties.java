@@ -7,9 +7,9 @@ import java.time.Duration;
 /**
  * Configuração do rate limiting, lida de {@code scene.rate-limit.*} no application.properties.
  *
- * @param capacity     quantas fichas cabem no balde (tamanho máximo de uma rajada)
- * @param refillTokens quantas fichas voltam para o balde a cada {@code refillPeriod}
- * @param refillPeriod intervalo de reposição das fichas
+ * @param capacity     quantos tokens cabem no bucket (tamanho máximo de um burst)
+ * @param refillTokens quantos tokens voltam para o bucket a cada {@code refillPeriod}
+ * @param refillPeriod intervalo de reposição dos tokens
  */
 @ConfigurationProperties(prefix = "scene.rate-limit")
 public record RateLimitProperties(int capacity, int refillTokens, Duration refillPeriod) {

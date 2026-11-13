@@ -19,7 +19,7 @@ import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
-import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springdoc.core.customizers.GlobalOpenApiCustomizer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
@@ -32,11 +32,11 @@ import java.util.Map;
 /**
  * Documenta no Swagger os recursos da Parte 2 que valem para várias rotas de uma vez: versionamento,
  * CORS, rate limiting e idempotência. Em vez de repetir as mesmas anotações nos 40 métodos dos controllers,
- * este customizador percorre as operações já geradas pelo springdoc e acrescenta em cada uma os cabeçalhos
+ * este customizer percorre as operações já geradas pelo springdoc e acrescenta em cada uma os headers
  * e os erros que podem acontecer ali (400 de versão inválida, 403, 406, 415, 422 e 429).
  */
 @Component
-public class OpenApiPartTwoCustomizer implements OpenApiCustomizer {
+public class OpenApiPartTwoCustomizer implements GlobalOpenApiCustomizer {
 
     private static final String JSON = "application/json";
     private static final String API_ERROR_SCHEMA = "#/components/schemas/ApiError";
@@ -44,10 +44,14 @@ public class OpenApiPartTwoCustomizer implements OpenApiCustomizer {
     private static final String QUERY_PARAMETER = "query";
 
     /** Rota que tem duas versões (ver ArtistController). */
-    private static final String VERSIONED_PATH = "/artists/{id}";
+    static final String VERSIONED_PATH = "/artists/{id}";
 
-    private static final String ARTIST_V1_SCHEMA = "EntityModelArtistResponse";
-    private static final String ARTIST_V2_SCHEMA = "EntityModelArtistResponseV2";
+    static final String ARTIST_V1_SCHEMA = "EntityModelArtistResponse";
+    static final String ARTIST_V2_SCHEMA = "EntityModelArtistResponseV2";
+
+    /** Nomes dos exemplos de resposta de GET /artists/{id}, um por versão. */
+    static final String ARTIST_V1_EXAMPLE_NAME = "v1";
+    static final String ARTIST_V2_EXAMPLE_NAME = "v2";
 
     private static final String ARTIST_LINKS = """
             "_links": {"self": {"href": "http://localhost:8080/artists/1"}, "update": {"href": "http://localhost:8080/artists/1"}, "delete": {"href": "http://localhost:8080/artists/1"}, "artists": {"href": "http://localhost:8080/artists"}, "albums": {"href": "http://localhost:8080/albums/by-artist/1"}, "profile": {"href": "http://localhost:8080/artist-profiles/by-artist/1"}}""";
@@ -150,7 +154,7 @@ public class OpenApiPartTwoCustomizer implements OpenApiCustomizer {
 
     // ---------- Versionamento ----------
 
-    /** Cabeçalho X-API-Version em todas as rotas: qualquer uma devolve 400 se a versão pedida não existir. */
+    /** Header X-API-Version em todas as rotas: qualquer uma devolve 400 se a versão pedida não existir. */
     private void documentApiVersion(Operation operation, boolean versioned) {
         String effect = versioned
                 ? "Nesta rota a resposta muda: a versão 1 devolve `country` e `formedYear` soltos; a versão 2 devolve o objeto "
@@ -162,17 +166,17 @@ public class OpenApiPartTwoCustomizer implements OpenApiCustomizer {
             operation.addParametersItem(header);
         }
         header.required(false)
-                .description("Versão da API que deve responder: " + ApiVersionConfig.V1 + " (padrão, usada quando o cabeçalho não é "
-                        + "enviado) ou " + ApiVersionConfig.V2 + ". " + effect + " Qualquer outro valor devolve 400 Bad Request.")
+                .description("Versão da API que deve responder: " + ApiVersionConfig.V1 + " ou " + ApiVersionConfig.V2
+                        + ". Sem o header vale a " + ApiVersionConfig.V1 + ". " + effect + " Qualquer outro valor devolve 400 Bad Request.")
                 .schema(new StringSchema()._default(ApiVersionConfig.V1))
                 .example(null);
 
         ApiResponse badRequest = operation.getResponses().get("400");
         if (badRequest == null) {
-            badRequest = errorResponse("Bad Request – versão da API não suportada (cabeçalho " + ApiVersionConfig.HEADER + ")");
+            badRequest = errorResponse("Bad Request – versão da API não suportada (header " + ApiVersionConfig.HEADER + ")");
             operation.getResponses().addApiResponse("400", badRequest);
         } else {
-            badRequest.setDescription(badRequest.getDescription() + "; versão da API não suportada (cabeçalho "
+            badRequest.setDescription(badRequest.getDescription() + "; versão da API não suportada (header "
                     + ApiVersionConfig.HEADER + ")");
         }
         addExample(badRequest, "Versão da API não suportada", ErrorExamples.BAD_REQUEST_API_VERSION);
@@ -186,7 +190,7 @@ public class OpenApiPartTwoCustomizer implements OpenApiCustomizer {
     private void documentArtistVersions(OpenAPI openApi, Operation operation) {
         operation.setSummary("Busca um artista pelo id (versões 1 e 2)");
         operation.setDescription("Retorna os dados de um único artista a partir do seu identificador, com links para álbuns e perfil. "
-                + "É a rota que demonstra o versionamento por cabeçalho: com `" + ApiVersionConfig.HEADER + ": 1` (ou sem o cabeçalho) "
+                + "É a rota que demonstra o versionamento por header: com `" + ApiVersionConfig.HEADER + ": 1` (ou sem o header) "
                 + "a resposta é a original; com `" + ApiVersionConfig.HEADER + ": 2`, `country` e `formedYear` passam para o objeto "
                 + "`origin` e entram `albumCount` (quantidade de álbuns) e `hasProfile` (se o artista já tem perfil).");
 
@@ -204,8 +208,8 @@ public class OpenApiPartTwoCustomizer implements OpenApiCustomizer {
             }
         }
         MediaType body = new MediaType()
-                .addExamples("Versão 1 (padrão)", new Example().value(parse(ARTIST_V1_EXAMPLE)))
-                .addExamples("Versão 2", new Example().value(parse(ARTIST_V2_EXAMPLE)));
+                .addExamples(ARTIST_V1_EXAMPLE_NAME, new Example().value(parse(ARTIST_V1_EXAMPLE)))
+                .addExamples(ARTIST_V2_EXAMPLE_NAME, new Example().value(parse(ARTIST_V2_EXAMPLE)));
         if (eitherVersion.getOneOf() != null) {
             body.schema(eitherVersion);
         }
@@ -215,7 +219,7 @@ public class OpenApiPartTwoCustomizer implements OpenApiCustomizer {
     // ---------- CORS ----------
 
     private void documentCors(Operation operation) {
-        ApiResponse forbidden = errorResponse("Forbidden – requisição bloqueada pelo CORS: veio de outra origem (cabeçalho Origin) "
+        ApiResponse forbidden = errorResponse("Forbidden – requisição bloqueada pelo CORS: veio de outra origem (header Origin) "
                 + "que não está na lista de origens permitidas");
         addExample(forbidden, "Origem não permitida", ErrorExamples.FORBIDDEN_CORS);
         operation.getResponses().addApiResponse("403", forbidden);
@@ -224,7 +228,7 @@ public class OpenApiPartTwoCustomizer implements OpenApiCustomizer {
     // ---------- Negociação de conteúdo ----------
 
     private void documentNotAcceptable(Operation operation) {
-        ApiResponse notAcceptable = errorResponse("Not Acceptable – o cabeçalho Accept só aceita um formato que a API não produz "
+        ApiResponse notAcceptable = errorResponse("Not Acceptable – o header Accept só aceita um formato que a API não produz "
                 + "(as respostas são sempre JSON). A requisição é recusada antes de ser executada");
         addExample(notAcceptable, "Formato não suportado", ErrorExamples.NOT_ACCEPTABLE);
         operation.getResponses().addApiResponse("406", notAcceptable);
@@ -239,7 +243,7 @@ public class OpenApiPartTwoCustomizer implements OpenApiCustomizer {
     // ---------- Idempotência ----------
 
     private void documentIdempotency(Operation operation) {
-        operation.setDescription(operation.getDescription() + " Aceita o cabeçalho opcional `" + IdempotencyService.HEADER
+        operation.setDescription(operation.getDescription() + " Aceita o header opcional `" + IdempotencyService.HEADER
                 + "`: repetir a mesma requisição com a mesma chave não cria nada de novo e devolve a resposta original.");
 
         // Sem "example" de propósito: o Swagger UI preencheria o campo sozinho e todo teste sairia com a mesma chave
@@ -293,7 +297,7 @@ public class OpenApiPartTwoCustomizer implements OpenApiCustomizer {
         successResponses(operation).forEach(response -> addRateLimitHeaders(response, rateLimit.capacity() - 1, 1));
 
         ApiResponse tooMany = errorResponse("Too Many Requests – limite de requisições por IP excedido (token bucket com "
-                + rateLimit.capacity() + " fichas e reposição de " + rateLimit.refillTokens() + " a cada "
+                + rateLimit.capacity() + " tokens e reposição de " + rateLimit.refillTokens() + " a cada "
                 + OpenApiTexts.describe(rateLimit.refillPeriod()) + "). Espere o tempo indicado em Retry-After");
         tooMany.addHeaderObject(HttpHeaders.RETRY_AFTER, new Header()
                 .description("Segundos até a próxima requisição ser aceita")
@@ -305,13 +309,13 @@ public class OpenApiPartTwoCustomizer implements OpenApiCustomizer {
 
     private void addRateLimitHeaders(ApiResponse response, long remainingExample, long resetExample) {
         response.addHeaderObject(RateLimitInterceptor.LIMIT_HEADER, new Header()
-                .description("Capacidade do balde: quantas requisições seguidas o IP pode fazer")
+                .description("Capacidade do bucket: quantas requisições seguidas o IP pode fazer")
                 .schema(new IntegerSchema().example(rateLimit.capacity())));
         response.addHeaderObject(RateLimitInterceptor.REMAINING_HEADER, new Header()
-                .description("Fichas que sobraram no balde depois desta requisição")
+                .description("Tokens que sobraram no bucket depois desta requisição")
                 .schema(new IntegerSchema().example(remainingExample)));
         response.addHeaderObject(RateLimitInterceptor.RESET_HEADER, new Header()
-                .description("Segundos até o balde ficar cheio de novo")
+                .description("Segundos até o bucket ficar cheio de novo")
                 .schema(new IntegerSchema().example(resetExample)));
     }
 

@@ -10,13 +10,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Versionamento por cabeçalho: GET /artists/{id} tem duas versões, escolhidas por X-API-Version. */
+/** Versionamento por header: GET /artists/{id} tem duas versões, escolhidas por X-API-Version. */
 class ApiVersioningIntegrationTest extends IntegrationTestSupport {
 
     private static final String VERSION_HEADER = "X-API-Version";
 
     @Test
-    @DisplayName("Sem o cabeçalho vale a versão 1: país e ano soltos no artista")
+    @DisplayName("Sem o header vale a versão 1: país e ano soltos no artista")
     void defaultsToVersionOne() {
         HttpResponse<String> response = get("/artists/1");
         JsonNode artist = json(response);

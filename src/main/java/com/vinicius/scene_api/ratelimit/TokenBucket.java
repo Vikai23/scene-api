@@ -3,11 +3,11 @@ package com.vinicius.scene_api.ratelimit;
 import java.time.Duration;
 
 /**
- * Algoritmo token bucket (balde de fichas) para um cliente.
+ * Algoritmo token bucket para um cliente.
  * <p>
- * O balde começa cheio. Cada requisição gasta uma ficha, e as fichas voltam aos poucos, numa taxa fixa,
- * até o limite da capacidade. Com o balde vazio a requisição é recusada. Assim o cliente pode fazer
- * uma rajada do tamanho da capacidade, mas na média não passa da taxa de reposição.
+ * O bucket começa cheio. Cada requisição consome um token, e os tokens voltam aos poucos, numa taxa fixa,
+ * até o limite da capacidade. Com o bucket vazio a requisição é recusada. Assim o cliente pode fazer
+ * um burst do tamanho da capacidade, mas na média não passa da taxa de reposição.
  * <p>
  * O horário é sempre recebido por parâmetro (em nanossegundos), o que deixa a classe fácil de testar.
  */
@@ -28,7 +28,7 @@ public class TokenBucket {
         this.lastRefillNanos = nowNanos;
     }
 
-    /** Repõe as fichas do tempo que passou e tenta gastar uma. */
+    /** Repõe os tokens do tempo que passou e tenta consumir um. */
     public synchronized RateLimitResult tryConsume(long nowNanos) {
         refill(nowNanos);
         if (tokens >= 1.0) {
@@ -39,7 +39,7 @@ public class TokenBucket {
         return new RateLimitResult(false, capacity, 0, secondsUntilFull(), retryAfterSeconds);
     }
 
-    /** Balde cheio é igual a balde novo: pode ser descartado sem mudar o resultado para o cliente. */
+    /** Bucket cheio é igual a bucket novo: pode ser descartado sem mudar o resultado para o cliente. */
     public synchronized boolean isFull(long nowNanos) {
         refill(nowNanos);
         return tokens >= capacity;

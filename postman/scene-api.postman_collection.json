@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "05809ea7-cd3c-5032-ba30-51bce515b93d",
 		"name": "scene-api",
-		"description": "Coleção da Scene API (Spring Boot). Rode com a aplicação em localhost:8080. Ordem sugerida: pastas 1 a 11, de cima para baixo (cada pasta guarda ids que a seguinte usa). Pastas 1 a 7: CRUD, relacionamentos e erros (400, 404, 405, 406, 409 e 415). Pastas 8 a 11: versionamento por cabeçalho, idempotência (422), CORS (403) e rate limiting (429). A API aceita 100 requisições por minuto por IP: o script da coleção espera sozinho quando as fichas estão acabando, por isso o final da execução é mais lento.",
+		"description": "Coleção da Scene API (Spring Boot). Rode com a aplicação em localhost:8080. Ordem sugerida: pastas 1 a 11, de cima para baixo (cada pasta guarda ids que a seguinte usa). Pastas 1 a 7: CRUD, relacionamentos e erros (400, 404, 405, 406, 409 e 415). Pastas 8 a 11: versionamento por header, idempotência (422), CORS (403) e rate limiting (429). A API aceita 100 requisições por minuto por IP: o script da coleção espera sozinho quando os tokens estão acabando, por isso o final da execução é mais lento.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -4270,7 +4270,7 @@
 		},
 		{
 			"name": "8. Versionamento (X-API-Version)",
-			"description": "Parte 2. A versão da API é escolhida pelo cabeçalho X-API-Version (1 ou 2; sem o cabeçalho vale a 1). GET /artists/{id} tem duas versões: a 2 agrupa país e ano em origin e traz albumCount e hasProfile. As outras rotas respondem igual nas duas versões.",
+			"description": "Parte 2. A versão da API é escolhida pelo header X-API-Version (1 ou 2; sem o header vale a 1). GET /artists/{id} tem duas versões: a 2 agrupa país e ano em origin e traz albumCount e hasProfile. As outras rotas respondem igual nas duas versões.",
 			"item": [
 				{
 					"name": "Find an artist to compare versions",
@@ -4318,7 +4318,7 @@
 					}
 				},
 				{
-					"name": "Get an artist - sem cabeçalho (versão 1)",
+					"name": "Get an artist - sem header (versão 1)",
 					"event": [
 						{
 							"listen": "test",
@@ -4366,7 +4366,7 @@
 									"pm.test('X-API-Version: 1 na resposta', function () {",
 									"  pm.expect(pm.response.headers.get('X-API-Version')).to.eql('1');",
 									"});",
-									"pm.test('Mesmo formato de quando o cabeçalho não é enviado', function () {",
+									"pm.test('Mesmo formato de quando o header não é enviado', function () {",
 									"  const j = pm.response.json();",
 									"  pm.expect(j).to.have.property('country');",
 									"  pm.expect(j).to.not.have.property('origin');",
@@ -4506,7 +4506,7 @@
 									"  pm.expect(j).to.have.property('timestamp');",
 									"  pm.expect(j.details).to.be.an('array');",
 									"});",
-									"pm.test('A mensagem cita o cabeçalho X-API-Version', function () {",
+									"pm.test('A mensagem cita o header X-API-Version', function () {",
 									"  pm.expect(pm.response.json().message).to.include('X-API-Version');",
 									"});"
 								]
@@ -4578,7 +4578,7 @@
 		},
 		{
 			"name": "9. Idempotência (X-Idempotency-Key)",
-			"description": "Parte 2. Nos POST, o cliente pode mandar uma chave única no cabeçalho X-Idempotency-Key. Repetir a mesma requisição com a mesma chave não cria outro registro: a API devolve a resposta original, com X-Idempotent-Replayed: true. A primeira requisição gera a chave e guarda em idempotencyKey.",
+			"description": "Parte 2. Nos POST, o cliente pode mandar uma chave única no header X-Idempotency-Key. Repetir a mesma requisição com a mesma chave não cria outro registro: a API devolve a resposta original, com X-Idempotent-Replayed: true. A primeira requisição gera a chave e guarda em idempotencyKey.",
 			"item": [
 				{
 					"name": "Create a playlist with an idempotency key",
@@ -5103,7 +5103,7 @@
 		},
 		{
 			"name": "10. CORS",
-			"description": "Parte 2. O navegador manda no cabeçalho Origin o endereço da página que está chamando a API. Só as origens configuradas em scene.cors.allowed-origins (a da página de demonstração é http://localhost:3000) são aceitas; as outras recebem 403 Forbidden. Aqui o Origin é escrito à mão para simular o navegador.",
+			"description": "Parte 2. O navegador manda no header Origin o endereço da página que está chamando a API. Só as origens configuradas em scene.cors.allowed-origins (a do front em Angular é http://localhost:4200) são aceitas; as outras recebem 403 Forbidden. Aqui o Origin é escrito à mão para simular o navegador.",
 			"item": [
 				{
 					"name": "Request from an allowed origin",
@@ -5115,9 +5115,9 @@
 								"exec": [
 									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
 									"pm.test('Access-Control-Allow-Origin repete a origem permitida', function () {",
-									"  pm.expect(pm.response.headers.get('Access-Control-Allow-Origin')).to.eql('http://localhost:3000');",
+									"  pm.expect(pm.response.headers.get('Access-Control-Allow-Origin')).to.eql('http://localhost:4200');",
 									"});",
-									"pm.test('Access-Control-Expose-Headers libera os cabeçalhos da API para o JavaScript', function () {",
+									"pm.test('Access-Control-Expose-Headers libera os headers da API para o JavaScript', function () {",
 									"  pm.expect(pm.response.headers.get('Access-Control-Expose-Headers')).to.include('X-RateLimit-Remaining');",
 									"});"
 								]
@@ -5129,7 +5129,7 @@
 						"header": [
 							{
 								"key": "Origin",
-								"value": "http://localhost:3000"
+								"value": "http://localhost:4200"
 							}
 						],
 						"url": {
@@ -5219,7 +5219,7 @@
 									"pm.test('Métodos liberados: GET, POST, PUT, DELETE, OPTIONS', function () {",
 									"  pm.expect(pm.response.headers.get('Access-Control-Allow-Methods')).to.eql('GET,POST,PUT,DELETE,OPTIONS');",
 									"});",
-									"pm.test('Cabeçalhos liberados incluem X-Idempotency-Key e X-API-Version', function () {",
+									"pm.test('Headers liberados incluem X-Idempotency-Key e X-API-Version', function () {",
 									"  const allowed = pm.response.headers.get('Access-Control-Allow-Headers').toLowerCase();",
 									"  pm.expect(allowed).to.include('x-idempotency-key');",
 									"  pm.expect(allowed).to.include('x-api-version');",
@@ -5236,7 +5236,7 @@
 						"header": [
 							{
 								"key": "Origin",
-								"value": "http://localhost:3000"
+								"value": "http://localhost:4200"
 							},
 							{
 								"key": "Access-Control-Request-Method",
@@ -5289,7 +5289,7 @@
 						"header": [
 							{
 								"key": "Origin",
-								"value": "http://localhost:3000"
+								"value": "http://localhost:4200"
 							},
 							{
 								"key": "Access-Control-Request-Method",
@@ -5316,7 +5316,7 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
-									"pm.test('Sem Origin não há cabeçalhos de CORS na resposta', function () {",
+									"pm.test('Sem Origin não há headers de CORS na resposta', function () {",
 									"  pm.expect(pm.response.headers.has('Access-Control-Allow-Origin')).to.be.false;",
 									"});"
 								]
@@ -5352,7 +5352,7 @@
 		},
 		{
 			"name": "11. Rate limiting (token bucket)",
-			"description": "Parte 2. Cada IP tem um balde de 100 fichas; cada requisição gasta uma e o balde recebe 100 fichas por minuto. Sem fichas a resposta é 429 Too Many Requests, com Retry-After. Esta pasta fica por último porque esvazia o balde.",
+			"description": "Parte 2. Cada IP tem um bucket de 100 tokens; cada requisição consome um e o bucket recebe 100 tokens por minuto. Sem tokens a resposta é 429 Too Many Requests, com Retry-After. Esta pasta fica por último porque esvazia o bucket.",
 			"item": [
 				{
 					"name": "Rate limit headers on a normal response",
@@ -5407,19 +5407,29 @@
 							"script": {
 								"type": "text/javascript",
 								"exec": [
-									"// Esvazia o balde: dispara de uma vez mais requisições do que a capacidade.",
-									"// O Postman só envia a requisição desta aba depois que todas as respostas chegam, então ela encontra o balde vazio.",
+									"// Esvazia o bucket: dispara de uma vez mais requisições do que a capacidade.",
+									"// Os tokens voltam aos poucos (um a cada 0,6 s com a configuração padrão). Para a requisição desta aba não",
+									"// pegar um token que acabou de voltar, o script espera o próximo token e gasta esse também; a requisição",
+									"// sai logo em seguida (o Postman só a envia depois que todas as respostas chegam) e encontra o bucket vazio.",
 									"const capacity = Number(pm.variables.get('rateLimit')) || 100;",
 									"const total = capacity + 20;",
 									"const address = pm.variables.replaceIn('{{baseUrl}}/artists?page=0&size=1');",
 									"let answered = 0;",
 									"let blocked = 0;",
+									"",
+									"function spendNextToken() {",
+									"    pm.sendRequest(address, function (error, response) {",
+									"        if (!error && response.code === 429) { setTimeout(spendNextToken, 40); }",
+									"    });",
+									"}",
+									"",
 									"for (let i = 0; i < total; i++) {",
 									"    pm.sendRequest(address, function (error, response) {",
 									"        answered++;",
 									"        if (!error && response.code === 429) { blocked++; }",
 									"        if (answered === total) {",
-									"            console.log('Rajada de ' + total + ' requisições: ' + (total - blocked) + ' aceitas e ' + blocked + ' recusadas com 429');",
+									"            console.log('Burst de ' + total + ' requisições: ' + (total - blocked) + ' aceitas e ' + blocked + ' recusadas com 429');",
+									"            spendNextToken();",
 									"        }",
 									"    });",
 									"}"
@@ -5473,7 +5483,7 @@
 								}
 							]
 						},
-						"description": "O Pre-request Script dispara uma rajada maior que a capacidade do balde. A requisição em si chega com o balde vazio e recebe 429."
+						"description": "O Pre-request Script dispara um burst maior que a capacidade do bucket e gasta também o próximo token que volta. A requisição em si sai logo depois, com o bucket vazio, e recebe 429."
 					}
 				},
 				{
@@ -5485,7 +5495,7 @@
 								"type": "text/javascript",
 								"exec": [
 									"pm.test('Status 200 OK', function () { pm.response.to.have.status(200); });",
-									"pm.test('As fichas foram repostas com o tempo', function () {",
+									"pm.test('Os tokens foram repostos com o tempo', function () {",
 									"  pm.expect(Number(pm.response.headers.get('X-RateLimit-Remaining'))).to.be.at.least(0);",
 									"});"
 								]
@@ -5514,7 +5524,7 @@
 								}
 							]
 						},
-						"description": "O script da coleção espera a reposição das fichas antes de enviar (veja o Console do Postman)."
+						"description": "O script da coleção espera a reposição dos tokens antes de enviar (veja o Console do Postman)."
 					}
 				}
 			]
@@ -5573,14 +5583,14 @@
 				"type": "text/javascript",
 				"exec": [
 					"// A API aceita 100 requisições por minuto por IP (rate limiting por token bucket) e a coleção inteira passa disso.",
-					"// Este script lê quantas fichas restam (cabeçalhos X-RateLimit-*) e espera a reposição quando elas estão acabando,",
+					"// Este script lê quantos tokens restam (headers X-RateLimit-*) e espera a reposição quando eles estão acabando,",
 					"// para a coleção rodar de uma vez sem receber 429 fora da pasta 11.",
-					"const RESERVE = 2; // fichas que precisam estar no balde antes de enviar",
+					"const RESERVE = 2; // tokens que precisam estar no bucket antes de enviar",
 					"",
 					"function waitForTokens(remaining, secondsPerToken) {",
 					"    if (remaining >= RESERVE) { return; }",
 					"    const seconds = (RESERVE - remaining) * secondsPerToken;",
-					"    console.log('Rate limit: esperando ' + seconds.toFixed(1) + ' s pela reposição de fichas');",
+					"    console.log('Rate limit: esperando ' + seconds.toFixed(1) + ' s pela reposição de tokens');",
 					"    setTimeout(function () {}, Math.ceil(seconds * 1000));",
 					"    pm.variables.set('rateRemaining', RESERVE);",
 					"}",
@@ -5588,7 +5598,7 @@
 					"if (pm.variables.get('rateRemaining') !== undefined) {",
 					"    waitForTokens(Number(pm.variables.get('rateRemaining')), Number(pm.variables.get('rateSecondsPerToken')));",
 					"} else {",
-					"    // Primeira requisição da execução: pergunta à API como está o balde",
+					"    // Primeira requisição da execução: pergunta à API como está o bucket",
 					"    pm.sendRequest(pm.variables.replaceIn('{{baseUrl}}/artists?page=0&size=1'), function (error, response) {",
 					"        if (error || !response.headers.has('X-RateLimit-Limit')) { return; }",
 					"        const limit = Number(response.headers.get('X-RateLimit-Limit'));",
@@ -5608,7 +5618,7 @@
 			"script": {
 				"type": "text/javascript",
 				"exec": [
-					"// Depois de cada resposta, guarda quantas fichas sobraram no balde (usado pelo Pre-request Script da coleção)",
+					"// Depois de cada resposta, guarda quantos tokens sobraram no bucket (usado pelo Pre-request Script da coleção)",
 					"if (pm.response.headers.has('X-RateLimit-Limit')) {",
 					"    const limit = Number(pm.response.headers.get('X-RateLimit-Limit'));",
 					"    const remaining = Number(pm.response.headers.get('X-RateLimit-Remaining'));",

@@ -47,10 +47,10 @@ public final class ErrorExamples {
             {"status": 400, "error": "Bad Request", "message": "O artista de um perfil existente não pode ser alterado", "path": "/artist-profiles/1", "timestamp": "2026-10-09T10:15:30", "details": []}""";
 
     public static final String BAD_REQUEST_API_VERSION = """
-            {"status": 400, "error": "Bad Request", "message": "Versão da API não suportada: '9'. Use o cabeçalho X-API-Version com 1 ou 2 (sem o cabeçalho vale a versão 1).", "path": "/artists/1", "timestamp": "2026-10-09T10:15:30", "details": []}""";
+            {"status": 400, "error": "Bad Request", "message": "Versão da API não suportada: '9'. Use o header X-API-Version com 1 ou 2 (sem o header vale a versão 1).", "path": "/artists/1", "timestamp": "2026-10-09T10:15:30", "details": []}""";
 
     public static final String BAD_REQUEST_IDEMPOTENCY_KEY = """
-            {"status": 400, "error": "Bad Request", "message": "Cabeçalho X-Idempotency-Key inválido: use de 1 a 100 caracteres entre letras, números, ponto, hífen, dois-pontos e underline (ex.: um UUID)", "path": "/artists", "timestamp": "2026-10-09T10:15:30", "details": []}""";
+            {"status": 400, "error": "Bad Request", "message": "Header X-Idempotency-Key inválido: use de 1 a 100 caracteres entre letras, números, ponto, hífen, dois-pontos e underline (ex.: um UUID)", "path": "/artists", "timestamp": "2026-10-09T10:15:30", "details": []}""";
 
     public static final String BAD_REQUEST_PAGE_TOO_LARGE = """
             {"status": 400, "error": "Bad Request", "message": "Número de página muito grande para o tamanho informado (página x tamanho passa de 2147483647)", "path": "/artists", "timestamp": "2026-10-09T10:15:30", "details": []}""";

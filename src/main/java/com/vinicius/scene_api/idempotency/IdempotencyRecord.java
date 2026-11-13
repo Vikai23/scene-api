@@ -6,7 +6,7 @@ import java.time.Instant;
 
 /**
  * Registro de uma chave de idempotência já usada em um POST (tabela {@code idempotency_keys}).
- * Guarda a "impressão digital" da requisição original e a resposta devolvida, para repetir
+ * Guarda o hash da requisição original e a resposta devolvida, para repetir
  * essa mesma resposta se o cliente reenviar a chave.
  */
 @Entity
@@ -17,7 +17,7 @@ public class IdempotencyRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Valor do cabeçalho X-Idempotency-Key. Único: o banco impede duas requisições com a mesma chave. */
+    /** Valor do header X-Idempotency-Key. Único: o banco impede duas requisições com a mesma chave. */
     @Column(nullable = false, unique = true, length = 100)
     private String idempotencyKey;
 

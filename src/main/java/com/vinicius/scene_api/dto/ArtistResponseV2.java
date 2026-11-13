@@ -6,14 +6,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.hateoas.server.core.Relation;
 
 /**
- * Representação do artista na versão 2 da API (cabeçalho {@code X-API-Version: 2}).
+ * Representação do artista na versão 2 da API (header {@code X-API-Version: 2}).
  * <p>
  * Em relação à versão 1 ({@link ArtistResponse}): o país e o ano de formação saem do nível principal e
  * passam para o objeto {@code origin}, e entram os campos {@code albumCount} e {@code hasProfile}.
  * Mover campos de lugar quebraria quem já consome a versão 1, por isso a mudança ficou numa versão nova.
  */
 @Relation(collectionRelation = "artists", itemRelation = "artist")
-@Schema(description = "Artista retornado pela versão 2 da API (cabeçalho X-API-Version: 2)")
+@Schema(description = "Artista retornado pela versão 2 da API (header X-API-Version: 2)")
 public record ArtistResponseV2(
 
         @Schema(description = "Identificador único, gerado pelo banco", example = "1")

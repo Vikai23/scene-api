@@ -11,7 +11,8 @@ import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.tags.Tag;
-import org.springdoc.core.customizers.OpenApiCustomizer;
+import org.springdoc.core.customizers.GlobalOpenApiCustomizer;
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springdoc.core.properties.SwaggerUiConfigProperties;
 import org.springdoc.core.properties.SwaggerUiOAuthProperties;
 import org.springdoc.core.providers.ObjectMapperProvider;
@@ -68,34 +69,37 @@ public class SwaggerConfig {
             Cada recurso devolve `_links` com `self`, `update`, `delete` e links para os recursos relacionados. \
             As listagens vêm em `_embedded`, com `page` (tamanho, total de itens e de páginas) e links de navegação (`first`, `prev`, `next`, `last`).
 
-            ### Versionamento (cabeçalho `X-API-Version`)
+            ### Versionamento (header `X-API-Version`)
 
-            A API tem as versões **1** (padrão) e **2**, escolhidas no cabeçalho `X-API-Version`. Sem o cabeçalho vale a versão 1 \
-            e um valor diferente de 1 e 2 devolve **400 Bad Request**. A resposta traz o mesmo cabeçalho com a versão que atendeu. \
+            A API tem as versões **1** e **2**, escolhidas no header `X-API-Version`. Sem o header vale a versão 1 \
+            e um valor diferente de 1 e 2 devolve **400 Bad Request**. A resposta traz o mesmo header com a versão que atendeu. \
             Hoje só `GET /artists/{id}` muda entre as versões: na 2, `country` e `formedYear` passam para o objeto `origin` e entram \
             `albumCount` e `hasProfile`. Nas demais rotas as duas versões respondem igual.
 
-            ### Idempotência (cabeçalho `X-Idempotency-Key`)
+            No topo desta página, o seletor **Versão da API** troca a documentação entre a **v1** e a **v2**. \
+            Com a v2 escolhida, o campo `X-API-Version` de todas as rotas já vem com `2` no *Try it out*.
 
-            Todo `POST` aceita o cabeçalho opcional `X-Idempotency-Key` (de 1 a 100 caracteres entre letras, números e `. _ : -`; o ideal é um UUID). \
+            ### Idempotência (header `X-Idempotency-Key`)
+
+            Todo `POST` aceita o header opcional `X-Idempotency-Key` (de 1 a 100 caracteres entre letras, números e `. _ : -`; o ideal é um UUID). \
             A API guarda a chave e a resposta por %s. Repetir a mesma requisição com a mesma chave **não** cria nada de novo: \
             volta a resposta original, com `X-Idempotent-Replayed: true`. A mesma chave em uma requisição diferente devolve \
-            **422 Unprocessable Content**. Sem o cabeçalho, o POST funciona normalmente.
+            **422 Unprocessable Content**. Sem o header, o POST funciona normalmente.
 
             ### Rate limiting (token bucket)
 
-            Cada IP tem um balde com **%d fichas**. Cada chamada a uma rota da API gasta uma ficha e o balde recebe %d fichas a cada %s. \
-            Com o balde vazio a resposta é **429 Too Many Requests**, com o cabeçalho `Retry-After` (segundos até a próxima ficha). \
-            Toda resposta informa o saldo em `X-RateLimit-Limit` (capacidade), `X-RateLimit-Remaining` (fichas restantes) e \
-            `X-RateLimit-Reset` (segundos até o balde encher de novo).
+            Cada IP tem um bucket com **%d tokens**. Cada chamada a uma rota da API consome um token e o bucket recebe %d tokens a cada %s. \
+            Com o bucket vazio a resposta é **429 Too Many Requests**, com o header `Retry-After` (segundos até o próximo token). \
+            Toda resposta informa o saldo em `X-RateLimit-Limit` (capacidade), `X-RateLimit-Remaining` (tokens restantes) e \
+            `X-RateLimit-Reset` (segundos até o bucket encher de novo).
 
             ### CORS
 
             Uma página de outra origem só consegue chamar a API pelo navegador se a origem estiver na lista: %s. \
-            Métodos aceitos: `GET`, `POST`, `PUT`, `DELETE` e `OPTIONS` (a consulta prévia, o *preflight*). Outra origem recebe \
-            **403 Forbidden**. Chamadas sem o cabeçalho `Origin` (Postman, curl e este Swagger UI) não passam por essa checagem. \
-            Para ver na prática, o projeto traz uma página de demonstração separada da API (pasta `web/` do repositório), \
-            que roda em `http://localhost:3000` e consome estas rotas pelo navegador.
+            Métodos aceitos: `GET`, `POST`, `PUT`, `DELETE` e `OPTIONS` (o *preflight*). Outra origem recebe \
+            **403 Forbidden**. Chamadas sem o header `Origin` (Postman, curl e este Swagger UI) não passam por essa checagem. \
+            Para ver na prática, o projeto tem um front-end em Angular em outro repositório \
+            ([scene-web](https://github.com/Vikai23/scene-web)), que roda em `http://localhost:4200` e consome estas rotas pelo navegador.
 
             ### Formato dos erros
 
@@ -105,13 +109,13 @@ public class SwaggerConfig {
             | Status | Quando acontece |
             |---|---|
             | **200 OK** | Consulta ou atualização feita com sucesso |
-            | **201 Created** | Recurso criado (o cabeçalho `Location` aponta para ele) |
+            | **201 Created** | Recurso criado (o header `Location` aponta para ele) |
             | **204 No Content** | Recurso removido |
             | **400 Bad Request** | Dados inválidos, JSON malformado ou com valor de tipo errado, id não numérico, enum inexistente, paginação ou ordenação inválida, versão da API inexistente ou chave de idempotência fora do formato |
             | **403 Forbidden** | Requisição de uma origem não permitida pelo CORS |
             | **404 Not Found** | Recurso ou rota inexistente |
             | **405 Method Not Allowed** | Método HTTP não aceito na rota |
-            | **406 Not Acceptable** | Cabeçalho `Accept` que só aceita um formato diferente de JSON (a requisição não é executada) |
+            | **406 Not Acceptable** | Header `Accept` que só aceita um formato diferente de JSON (a requisição não é executada) |
             | **409 Conflict** | Registro duplicado (ex.: nome de artista já cadastrado) ou requisição simultânea com a mesma chave de idempotência |
             | **415 Unsupported Media Type** | Corpo enviado sem ser `application/json` |
             | **422 Unprocessable Content** | Chave de idempotência reaproveitada em uma requisição diferente |
@@ -155,9 +159,36 @@ public class SwaggerConfig {
                                 "Cadastro de playlists e das faixas que fazem parte de cada uma. Relação N:N: uma playlist tem várias faixas e uma faixa pode estar em várias playlists.")));
     }
 
-    /** Mantém os grupos do Swagger na ordem do domínio (e não na ordem alfabética). */
+    /**
+     * Uma documentação por versão da API. Com duas, o Swagger UI mostra no topo o seletor "Versão da API":
+     * escolhida a "v2", todo Try it out já envia o header X-API-Version: 2 (ver ApiVersionDocsCustomizer).
+     * O endereço /v3/api-docs, sem versão, continua existindo e documenta as duas versões juntas.
+     */
     @Bean
-    public OpenApiCustomizer tagOrderCustomizer() {
+    public GroupedOpenApi versionOneDocs() {
+        return versionDocs(ApiVersionConfig.V1, "v1");
+    }
+
+    @Bean
+    public GroupedOpenApi versionTwoDocs() {
+        return versionDocs(ApiVersionConfig.V2, "v2");
+    }
+
+    private static GroupedOpenApi versionDocs(String version, String displayName) {
+        return GroupedOpenApi.builder()
+                .group("v" + version)
+                .displayName(displayName)
+                .pathsToMatch("/**")
+                .addOpenApiCustomizer(new ApiVersionDocsCustomizer(version))
+                .build();
+    }
+
+    /**
+     * Mantém os grupos do Swagger na ordem do domínio (e não na ordem alfabética). Os customizers globais
+     * (GlobalOpenApiCustomizer) valem para a documentação de cada versão também.
+     */
+    @Bean
+    public GlobalOpenApiCustomizer tagOrderCustomizer() {
         return openApi -> {
             if (openApi.getTags() == null) {
                 return;
@@ -172,11 +203,11 @@ public class SwaggerConfig {
     }
 
     /**
-     * O springdoc descreve page, size e sort em inglês. Este customizador troca esses textos por versões em português
+     * O springdoc descreve page, size e sort em inglês. Este customizer troca esses textos por versões em português
      * e faz o mesmo com o bloco "page" das respostas paginadas, para a documentação não misturar idiomas.
      */
     @Bean
-    public OpenApiCustomizer pagingDescriptionsCustomizer() {
+    public GlobalOpenApiCustomizer pagingDescriptionsCustomizer() {
         return openApi -> {
             if (openApi.getPaths() != null) {
                 openApi.getPaths().values().forEach(pathItem -> {

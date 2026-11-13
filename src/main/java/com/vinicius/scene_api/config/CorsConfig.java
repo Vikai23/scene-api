@@ -20,8 +20,8 @@ import java.util.List;
  * <p>
  * Por padrão o navegador não deixa o JavaScript de um site ler respostas de outra origem (outro endereço ou
  * outra porta). Aqui a API declara quem pode: só as origens listadas em {@code scene.cors.allowed-origins},
- * com os métodos e cabeçalhos abaixo. Qualquer outra origem recebe 403 Forbidden.
- * Chamadas sem o cabeçalho Origin (Postman, curl, o próprio Swagger UI) não passam por essa checagem.
+ * com os métodos e headers abaixo. Qualquer outra origem recebe 403 Forbidden.
+ * Chamadas sem o header Origin (Postman, curl, o próprio Swagger UI) não passam por essa checagem.
  */
 @Configuration
 public class CorsConfig {
@@ -29,21 +29,21 @@ public class CorsConfig {
     /** Métodos HTTP aceitos em requisições vindas de outra origem. */
     public static final List<String> ALLOWED_METHODS = List.of("GET", "POST", "PUT", "DELETE", "OPTIONS");
 
-    /** Cabeçalhos que o cliente de outra origem pode enviar. */
+    /** Headers que o cliente de outra origem pode enviar. */
     public static final List<String> ALLOWED_HEADERS = List.of(
             HttpHeaders.CONTENT_TYPE, HttpHeaders.ACCEPT, ApiVersionConfig.HEADER, IdempotencyService.HEADER);
 
-    /** Cabeçalhos de resposta que o JavaScript do cliente consegue ler (os demais o navegador esconde). */
+    /** Headers de resposta que o JavaScript do cliente consegue ler (os demais o navegador esconde). */
     public static final List<String> EXPOSED_HEADERS = List.of(
             HttpHeaders.LOCATION, HttpHeaders.RETRY_AFTER, ApiVersionConfig.HEADER, IdempotencyService.REPLAYED_HEADER,
             RateLimitInterceptor.LIMIT_HEADER, RateLimitInterceptor.REMAINING_HEADER, RateLimitInterceptor.RESET_HEADER);
 
-    /** Por quanto tempo o navegador pode guardar a resposta da consulta prévia (preflight, método OPTIONS). */
+    /** Por quanto tempo o navegador pode guardar a resposta do preflight (método OPTIONS). */
     public static final Duration PREFLIGHT_MAX_AGE = Duration.ofHours(1);
 
     /**
      * Registra o filtro de CORS como o primeiro da fila, para que a checagem aconteça antes de qualquer
-     * outra coisa e os cabeçalhos de CORS saiam em todas as respostas, inclusive nas de erro.
+     * outra coisa e os headers de CORS saiam em todas as respostas, inclusive nas de erro.
      */
     @Bean
     public FilterRegistrationBean<CorsFilter> corsFilter(CorsProperties properties, JsonMapper jsonMapper) {

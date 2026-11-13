@@ -14,7 +14,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * A API só responde em JSON. Este interceptador confere o cabeçalho {@code Accept} antes de a requisição
+ * A API só responde em JSON. Este interceptor confere o header {@code Accept} antes de a requisição
  * chegar ao controller: se o cliente só aceita outro formato (por exemplo application/xml), a resposta é
  * 406 Not Acceptable e nada é executado.
  * <p>
@@ -32,7 +32,7 @@ public class AcceptHeaderInterceptor implements HandlerInterceptor {
             throws HttpMediaTypeNotAcceptableException {
         List<String> accept = Collections.list(request.getHeaders(HttpHeaders.ACCEPT));
         if (accept.isEmpty()) {
-            return true; // sem o cabeçalho, o cliente aceita qualquer formato
+            return true; // sem o header, o cliente aceita qualquer formato
         }
         if (!acceptsJson(accept)) {
             throw new HttpMediaTypeNotAcceptableException(PRODUCED);
@@ -48,7 +48,7 @@ public class AcceptHeaderInterceptor implements HandlerInterceptor {
             return false; // valor que nem é um tipo de mídia
         }
         if (wanted.isEmpty()) {
-            return true; // cabeçalho em branco vale como ausente
+            return true; // header em branco vale como ausente
         }
         // Accept: */* e application/* também servem, porque são compatíveis com application/json
         return wanted.stream().anyMatch(type -> PRODUCED.stream().anyMatch(type::isCompatibleWith));

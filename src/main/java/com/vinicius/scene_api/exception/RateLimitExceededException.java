@@ -1,7 +1,7 @@
 package com.vinicius.scene_api.exception;
 
 /**
- * O cliente esgotou as fichas do rate limiting: vira 429 Too Many Requests com o cabeçalho Retry-After.
+ * O cliente esgotou os tokens do rate limiting: vira 429 Too Many Requests com o header Retry-After.
  */
 public class RateLimitExceededException extends RuntimeException {
 

@@ -140,7 +140,7 @@ public class ArtistController {
     }
 
     /**
-     * Versão 2 da mesma rota: atende quando o cliente manda o cabeçalho X-API-Version: 2.
+     * Versão 2 da mesma rota: atende quando o cliente manda o header X-API-Version: 2.
      * A documentação das duas versões fica em uma única operação no Swagger (ver OpenApiPartTwoCustomizer).
      */
     @GetMapping(path = "/{id}", version = ApiVersionConfig.V2)
@@ -155,7 +155,7 @@ public class ArtistController {
             description = "Cria um artista. Nome (2 a 100 caracteres, único) e gênero são obrigatórios; país (somente letras) e ano de formação (1000 a 2100) são opcionais."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Created – artista criado; o cabeçalho Location aponta para o novo recurso"),
+            @ApiResponse(responseCode = "201", description = "Created – artista criado; o header Location aponta para o novo recurso"),
             @ApiResponse(responseCode = "400", description = "Bad Request – dados inválidos (nome em branco ou fora de 2 a 100 caracteres, país com números, ano fora do intervalo, gênero inexistente) ou JSON malformado",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class),

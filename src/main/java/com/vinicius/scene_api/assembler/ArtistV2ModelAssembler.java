@@ -14,7 +14,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * Transforma o artista da versão 2 em EntityModel. Os links HATEOAS são os mesmos da versão 1,
- * porque as rotas não mudam entre as versões: a versão vai no cabeçalho, não no endereço.
+ * porque as rotas não mudam entre as versões: a versão vai no header, não no endereço.
  */
 @Component
 public class ArtistV2ModelAssembler implements RepresentationModelAssembler<ArtistResponseV2, EntityModel<ArtistResponseV2>> {

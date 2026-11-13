@@ -52,12 +52,12 @@
 
   <h2>3. Uso justo</h2>
   <p>Há um limite de requisições por endereço IP (rate limiting por token bucket), descrito na documentação.
-    Quem passa do limite recebe <code>429 Too Many Requests</code> e deve esperar o tempo indicado no cabeçalho
+    Quem passa do limite recebe <code>429 Too Many Requests</code> e deve esperar o tempo indicado no header
     <code>Retry-After</code>. Não tente contornar o limite nem sobrecarregar o serviço.</p>
 
   <h2>4. Versões</h2>
-  <p>Mudanças que alteram o formato das respostas entram em uma versão nova, escolhida no cabeçalho
-    <code>X-API-Version</code>. Quem não envia o cabeçalho continua recebendo a versão 1.</p>
+  <p>Mudanças que alteram o formato das respostas entram em uma versão nova, escolhida no header
+    <code>X-API-Version</code>. Quem não envia o header continua recebendo a versão 1.</p>
 
   <h2>5. Sem garantias</h2>
   <p>A API é oferecida no estado em que se encontra, sem garantia de disponibilidade, de suporte ou de que os dados

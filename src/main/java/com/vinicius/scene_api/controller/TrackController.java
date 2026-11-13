@@ -172,7 +172,7 @@ public class TrackController {
                     + "Opcional: durationSeconds (1 a 7200)."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Created – faixa criada; o cabeçalho Location aponta para o novo recurso"),
+            @ApiResponse(responseCode = "201", description = "Created – faixa criada; o header Location aponta para o novo recurso"),
             @ApiResponse(responseCode = "400", description = "Bad Request – dados inválidos (título em branco ou com símbolos proibidos, número da faixa ou duração fora do intervalo...) ou JSON malformado",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ApiError.class),

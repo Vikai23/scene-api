@@ -1,12 +1,12 @@
 # Scene API
 
-API REST de catálogo musical em **Java 21** e **Spring Boot**: artistas, perfis, álbuns, faixas e playlists, com os três tipos de relacionamento (1:1, 1:N e N:N), paginação, validação, links HATEOAS e documentação Swagger. Na Parte 2 entraram versionamento por cabeçalho, idempotência, rate limiting e CORS, com uma página web que consome a API a partir de outra origem.
+API REST de catálogo musical em **Java 21** e **Spring Boot**: artistas, perfis, álbuns, faixas e playlists, com os três tipos de relacionamento (1:1, 1:N e N:N), paginação, validação, links HATEOAS e documentação Swagger. Na Parte 2 entraram versionamento por header, idempotência, rate limiting e CORS, com um front-end em Angular, em outro repositório, que consome a API a partir de outra origem.
 
 > Projeto final da disciplina de **Web Services** (Senac TSI) — **Parte 1** (out/2026) e **Parte 2** (nov/2026).
 
 [![CI](https://github.com/Vikai23/scene-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Vikai23/scene-api/actions/workflows/ci.yml)
 
-**40 endpoints** · **120 requisições no Postman** (58 delas de erro) · **39 testes automatizados** · **105 registros de exemplo** carregados ao subir
+**40 endpoints** · **120 requisições no Postman** (58 delas de erro) · **40 testes automatizados** · **105 registros de exemplo** carregados ao subir
 
 ![Swagger UI da Scene API, com tema customizado](docs/swagger-hero.png)
 
@@ -35,9 +35,9 @@ API REST de catálogo musical em **Java 21** e **Spring Boot**: artistas, perfis
 - **Validação em dois níveis:** as mesmas regras nos DTOs de entrada e nas entidades (Bean Validation), com expressões regulares compartilhadas em `validation/`.
 - **HATEOAS (HAL):** cada recurso traz `_links` para si mesmo, para a coleção e para os recursos relacionados; as listagens vêm em `PagedModel`.
 - **Paginação e ordenação** em todas as listagens, inclusive nas buscas e nas consultas por relação.
-- **Parte 2, recursos avançados:** versionamento por cabeçalho (`X-API-Version`), idempotência nos `POST` (`X-Idempotency-Key`), rate limiting por token bucket (`429` com `Retry-After`) e CORS para origens específicas. ([detalhes](#parte-2-recursos-avançados))
-- **Página web de demonstração:** um site estático separado da API (pasta `web/`), em outra origem, que consome as rotas pelo navegador e mostra o CORS liberando ou bloqueando. ([detalhes](#página-de-demonstração))
-- **Testado:** 39 testes automatizados (JUnit), a maioria subindo a aplicação inteira e fazendo requisições HTTP de verdade, e coleção do Postman com 288 testes de status, de corpo, de cabeçalhos e de links — incluindo 58 casos de erro.
+- **Parte 2, recursos avançados:** versionamento por header (`X-API-Version`), idempotência nos `POST` (`X-Idempotency-Key`), rate limiting por token bucket (`429` com `Retry-After`) e CORS para origens específicas. ([detalhes](#parte-2-recursos-avançados))
+- **Front-end em Angular:** o [scene-web](https://github.com/Vikai23/scene-web) é um repositório separado que roda em outra origem e usa as 40 rotas pelo navegador. Ele tem o CRUD das 5 entidades, a comparação das duas versões, idempotência, o medidor do rate limit e uma aba que provoca cada erro. O CORS é o que libera a ligação entre os dois. ([detalhes](#front-end-em-angular))
+- **Testado:** 40 testes automatizados (JUnit), a maioria subindo a aplicação inteira e fazendo requisições HTTP de verdade, e coleção do Postman com 288 testes de status, de corpo, de headers e de links — incluindo 58 casos de erro.
 
 ### Tecnologias
 
@@ -50,7 +50,7 @@ API REST de catálogo musical em **Java 21** e **Spring Boot**: artistas, perfis
 | Banco | H2 (em memória) |
 | Documentação | Springdoc OpenAPI / Swagger UI 3.1.1, com tema customizado |
 | Parte 2 | Versionamento de API nativo do Spring Framework 7 · filtro de CORS do Spring · token bucket e idempotência escritos no próprio projeto, sem biblioteca extra |
-| Página de demonstração | HTML, CSS e JavaScript puros (`fetch`), sem framework nem etapa de build |
+| Front-end | Angular 21, em repositório separado ([scene-web](https://github.com/Vikai23/scene-web)) |
 
 ## Como executar
 
@@ -71,7 +71,7 @@ A API sobe em `http://localhost:8080`; abrir a raiz já redireciona para o Swagg
 | Swagger UI | http://localhost:8080/swagger-ui/index.html |
 | OpenAPI (JSON) | http://localhost:8080/v3/api-docs |
 | Console do H2 | http://localhost:8080/h2-console |
-| Página de demonstração | http://localhost:3000, depois de iniciar `web/iniciar-pagina.cmd` ([como usar](#página-de-demonstração)) |
+| Front-end em Angular | http://localhost:4200, depois de `npm start` no [scene-web](https://github.com/Vikai23/scene-web) ([como usar](#front-end-em-angular)) |
 
 No Console do H2: JDBC URL `jdbc:h2:mem:scenedb`, usuário `sa`, senha em branco.
 
@@ -83,7 +83,7 @@ O Swagger UI tem tema próprio e traz, além dos 40 endpoints, o modelo de dados
 
 ![Tabela de status HTTP documentada no Swagger UI](docs/swagger-erros.png)
 
-Para rodar os 39 testes automatizados (os de integração sobem a aplicação inteira em uma porta livre, com o H2 e a carga inicial, e fazem requisições HTTP de verdade):
+Para rodar os 40 testes automatizados (os de integração sobem a aplicação inteira em uma porta livre, com o H2 e a carga inicial, e fazem requisições HTTP de verdade):
 
 ```bash
 ./mvnw test
@@ -97,7 +97,7 @@ A coleção está em [`postman/scene-api.postman_collection.json`](postman/scene
 2. Suba a aplicação (`http://localhost:8080`). A variável `baseUrl` já vem configurada.
 3. Rode as pastas **1 a 11**, de cima para baixo (ou use o **Collection Runner**).
 
-Os ids criados são guardados automaticamente em variáveis (`artistId`, `profileId`, `albumId`, `trackId`, `track2Id` e `playlistId`), e cada requisição tem testes de status, de corpo, de cabeçalhos e de links HATEOAS.
+Os ids criados são guardados automaticamente em variáveis (`artistId`, `profileId`, `albumId`, `trackId`, `track2Id` e `playlistId`), e cada requisição tem testes de status, de corpo, de headers e de links HATEOAS.
 
 | Pasta | O que faz |
 | :-- | :-- |
@@ -110,10 +110,10 @@ Os ids criados são guardados automaticamente em variáveis (`artistId`, `profil
 | 7. Limpeza | Remove o que as pastas 1 a 5 criaram e confere as cascatas |
 | 8. Versionamento | `GET /artists/{id}` nas versões 1 e 2, e o `400` de versão inexistente |
 | 9. Idempotência | `POST` repetido com a mesma chave, chave reaproveitada (`422`) e chave fora do formato (`400`) |
-| 10. CORS | Origem permitida, origem bloqueada (`403`) e a consulta prévia (preflight) |
-| 11. Rate limiting | Cabeçalhos `X-RateLimit-*`, a rajada que esvazia o balde (`429`) e a volta depois da espera |
+| 10. CORS | Origem permitida, origem bloqueada (`403`) e o preflight (`OPTIONS`) |
+| 11. Rate limiting | Headers `X-RateLimit-*`, o burst que esvazia o bucket (`429`) e a volta depois da espera |
 
-> **A coleção respeita o rate limit.** A API aceita 100 requisições por minuto por IP e a coleção inteira passa disso. Por isso ela tem um script próprio (aba **Scripts** da coleção) que lê os cabeçalhos `X-RateLimit-*` de cada resposta e espera a reposição das fichas quando elas estão acabando. O fim da execução fica mais lento, e uma segunda execução logo em seguida leva cerca de 1 minuto. Reiniciar a aplicação zera o balde.
+> **A coleção respeita o rate limit.** A API aceita 100 requisições por minuto por IP e a coleção inteira passa disso. Por isso ela tem um script próprio (aba **Scripts** da coleção) que lê os headers `X-RateLimit-*` de cada resposta e espera a reposição dos tokens quando eles estão acabando. O fim da execução fica mais lento, e uma segunda execução logo em seguida leva cerca de 1 minuto. Reiniciar a aplicação enche o bucket de novo.
 
 ## Dados iniciais
 
@@ -290,11 +290,11 @@ Erro de validação, campo a campo:
 | `403 Forbidden` | Requisição de uma origem que o CORS não libera |
 | `404 Not Found` | Recurso (ou artista/álbum/playlist/faixa referenciado) não existe, ou rota inexistente |
 | `405 Method Not Allowed` | Verbo HTTP não suportado pela rota |
-| `406 Not Acceptable` | Cabeçalho `Accept` que só aceita um formato diferente de JSON (a requisição nem é executada) |
+| `406 Not Acceptable` | Header `Accept` que só aceita um formato diferente de JSON (a requisição nem é executada) |
 | `409 Conflict` | Valor único duplicado (nome de artista ou playlist, título de álbum no mesmo artista, número de faixa no mesmo álbum, perfil repetido, faixa já na playlist), ou duas requisições simultâneas com a mesma chave de idempotência |
 | `415 Unsupported Media Type` | Corpo enviado com um Content-Type diferente de `application/json` (form-data, texto, XML) |
 | `422 Unprocessable Content` | Chave de idempotência reaproveitada em uma requisição diferente |
-| `429 Too Many Requests` | Limite de requisições por IP excedido; o cabeçalho `Retry-After` diz quantos segundos esperar |
+| `429 Too Many Requests` | Limite de requisições por IP excedido; o header `Retry-After` diz quantos segundos esperar |
 | `500 Internal Server Error` | Só para falhas inesperadas do servidor, com mensagem genérica (nenhum dos casos acima chega aqui) |
 
 O JSON de entrada é **estrito**: cada campo só aceita o tipo dele. Texto em campo numérico (`"formedYear": "2004"`), número em campo de texto (`"name": 123`), número com casas decimais em campo inteiro e número no lugar de um enum (`"genre": 1`) devolvem `400`, com o campo apontado em `details`.
@@ -303,16 +303,16 @@ O JSON de entrada é **estrito**: cada campo só aceita o tipo dele. Texto em ca
 
 | Recurso | Como funciona | Onde está no código |
 | :-- | :-- | :-- |
-| [Versionamento](#versionamento-por-cabeçalho) | Cabeçalho `X-API-Version`: `1` ou `2` (sem ele vale a `1`) | `config/ApiVersionConfig`, `ArtistController` |
-| [Idempotência](#idempotência) | Cabeçalho opcional `X-Idempotency-Key` nos 6 `POST` | pacote `idempotency/` |
-| [Rate limiting](#rate-limiting-token-bucket) | Token bucket por IP: balde de 100 fichas, 100 novas por minuto | pacote `ratelimit/` |
+| [Versionamento](#versionamento-por-header) | Header `X-API-Version`: `1` ou `2` (sem ele vale a `1`) | `config/ApiVersionConfig`, `ArtistController` |
+| [Idempotência](#idempotência) | Header opcional `X-Idempotency-Key` nos 6 `POST` | pacote `idempotency/` |
+| [Rate limiting](#rate-limiting-token-bucket) | Token bucket por IP: bucket de 100 tokens, 100 novos por minuto | pacote `ratelimit/` |
 | [CORS](#cors) | Só as origens listadas em `scene.cors.allowed-origins` | `config/CorsConfig`, `config/JsonCorsProcessor` |
 
-Os quatro são configurados no `application.properties` (`scene.cors.*`, `scene.rate-limit.*` e `scene.idempotency.*`) e estão documentados no Swagger: cada rota lista os cabeçalhos novos e os erros `403`, `406`, `422` e `429` onde eles podem acontecer.
+Os quatro são configurados no `application.properties` (`scene.cors.*`, `scene.rate-limit.*` e `scene.idempotency.*`) e estão documentados no Swagger: cada rota lista os headers novos e os erros `403`, `406`, `422` e `429` onde eles podem acontecer.
 
-### Versionamento por cabeçalho
+### Versionamento por header
 
-A versão não vai na URL: vai no cabeçalho `X-API-Version`. A resposta devolve o mesmo cabeçalho com a versão que atendeu, e um valor diferente de `1` e `2` devolve `400`.
+A versão não vai na URL: vai no header `X-API-Version`. A resposta devolve o mesmo header com a versão que atendeu, e um valor diferente de `1` e `2` devolve `400`.
 
 Hoje só `GET /artists/{id}` muda de uma versão para a outra. As demais rotas respondem igual nas duas.
 
@@ -339,11 +339,13 @@ X-API-Version: 2
 
 Na versão 2, `country` e `formedYear` passam para o objeto `origin`, e entram `albumCount` e `hasProfile`. Quem já usa a versão 1 não percebe a mudança, porque continua recebendo o formato antigo. (Os `_links` vêm nas duas versões; ficaram de fora aqui para encurtar.)
 
+No Swagger UI, o seletor **Versão da API**, no topo da página, troca a documentação entre a `v1` e a `v2`, e o selo ao lado do título passa a mostrar `1.0` ou `2.0`. Com a `v2` escolhida, o campo `X-API-Version` de todas as rotas já vem com `2` no *Try it out*, e `GET /artists/{id}` mostra o formato da versão 2. O seletor só preenche esse campo: quem escolhe a versão continua sendo o header HTTP da requisição.
+
 ### Idempotência
 
 Uma operação é idempotente quando repetir a mesma requisição não muda o resultado. `GET`, `PUT` e `DELETE` já são assim por natureza; o `POST` não: enviado duas vezes, ele cria dois registros. Isso acontece, por exemplo, quando a resposta se perde no caminho e o cliente tenta de novo.
 
-Para resolver, o cliente gera um valor único (o ideal é um UUID) e manda no cabeçalho `X-Idempotency-Key`. A API guarda a chave junto com a resposta.
+Para resolver, o cliente gera um valor único (o ideal é um UUID) e manda no header `X-Idempotency-Key`. A API guarda a chave junto com a resposta.
 
 | Situação | Resposta |
 | :-- | :-- |
@@ -353,24 +355,24 @@ Para resolver, o cliente gera um valor único (o ideal é um UUID) e manda no ca
 | Chave fora do formato (1 a 100 letras, números e `. _ : -`) | `400 Bad Request` |
 | Duas requisições iguais ao mesmo tempo | Uma é processada; a outra recebe `409 Conflict` e pode tentar de novo |
 | A operação falhou (`400`, `404`, `409`) | Nada é guardado: dá para corrigir e reenviar com a mesma chave |
-| Sem o cabeçalho | O `POST` funciona como sempre |
+| Sem o header | O `POST` funciona como sempre |
 
 A chave vale por 24 horas (`scene.idempotency.ttl`). A chave e o registro criado são gravados na mesma transação, então não existe o caso de a chave ficar guardada sem o registro, nem o contrário.
 
 ### Rate limiting (token bucket)
 
-Cada IP tem um balde com 100 fichas. Cada chamada a uma rota da API gasta uma ficha, e o balde recebe 100 fichas por minuto, aos poucos (uma a cada 0,6 s), até voltar a ficar cheio. Com isso o cliente pode fazer uma rajada de até 100 requisições seguidas, mas na média não passa de 100 por minuto. Swagger UI, Console do H2 e arquivos estáticos ficam fora do limite.
+Cada IP tem um bucket com 100 tokens. Cada chamada a uma rota da API consome um token, e o bucket recebe 100 tokens por minuto, aos poucos (um a cada 0,6 s), até voltar a ficar cheio. Com isso o cliente pode fazer um burst de até 100 requisições seguidas, mas na média não passa de 100 por minuto. Swagger UI, Console do H2 e arquivos estáticos ficam fora do limite.
 
 Toda resposta informa o saldo:
 
-| Cabeçalho | Significado |
+| Header | Significado |
 | :-- | :-- |
-| `X-RateLimit-Limit` | Capacidade do balde |
-| `X-RateLimit-Remaining` | Fichas que sobraram depois desta requisição |
-| `X-RateLimit-Reset` | Segundos até o balde ficar cheio de novo |
+| `X-RateLimit-Limit` | Capacidade do bucket |
+| `X-RateLimit-Remaining` | Tokens que sobraram depois desta requisição |
+| `X-RateLimit-Reset` | Segundos até o bucket ficar cheio de novo |
 | `Retry-After` | Só no `429`: segundos até a próxima requisição ser aceita |
 
-Com o balde vazio:
+Com o bucket vazio:
 
 ```json
 {
@@ -383,7 +385,7 @@ Com o balde vazio:
 }
 ```
 
-Para ver o `429` à mão, sem precisar de 100 requisições, suba a API com um balde pequeno: troque no `application.properties` para `scene.rate-limit.capacity=5` e `scene.rate-limit.refill-tokens=5`. No sexto clique seguido no Swagger vem o `429`.
+Para ver o `429` à mão, sem precisar de 100 requisições, suba a API com um bucket pequeno: troque no `application.properties` para `scene.rate-limit.capacity=5` e `scene.rate-limit.refill-tokens=5`. No sexto clique seguido no Swagger vem o `429`.
 
 ### CORS
 
@@ -391,40 +393,47 @@ Navegadores só deixam o JavaScript de uma página ler a resposta de outra orige
 
 | Origem | Para quê |
 | :-- | :-- |
-| `http://localhost:3000` | Página de demonstração servida pelo `web/iniciar-pagina.cmd` |
-| `http://localhost:63342` | A mesma página aberta pelo servidor embutido do IntelliJ |
-| `http://localhost:5500` e `http://127.0.0.1:5500` | A mesma página aberta pela extensão Live Server do VS Code |
+| `http://localhost:4200` | O front-end em Angular ([scene-web](https://github.com/Vikai23/scene-web)), rodando com `npm start` |
 
-- **Métodos liberados:** `GET`, `POST`, `PUT`, `DELETE` e `OPTIONS` (a consulta prévia do navegador, o *preflight*).
-- **Cabeçalhos que a página pode enviar:** `Content-Type`, `Accept`, `X-API-Version` e `X-Idempotency-Key`.
-- **Cabeçalhos que a página pode ler:** `Location`, `Retry-After`, `X-API-Version`, `X-Idempotent-Replayed` e os três `X-RateLimit-*`.
+- **Métodos liberados:** `GET`, `POST`, `PUT`, `DELETE` e `OPTIONS` (o *preflight* que o navegador faz antes de certas requisições).
+- **Headers que a página pode enviar:** `Content-Type`, `Accept`, `X-API-Version` e `X-Idempotency-Key`.
+- **Headers que a página pode ler:** `Location`, `Retry-After`, `X-API-Version`, `X-Idempotent-Replayed` e os três `X-RateLimit-*`.
 - **Origem fora da lista:** `403 Forbidden`, no mesmo corpo de erro das outras respostas.
-- **Sem o cabeçalho `Origin`** (Postman, curl e o próprio Swagger UI, que tem a mesma origem da API) a checagem não acontece.
+- **Sem o header `Origin`** (Postman, curl e o próprio Swagger UI, que tem a mesma origem da API) a checagem não acontece.
 
-### Página de demonstração
+### Front-end em Angular
 
-A pasta [`web/`](web) é um site estático separado da API (`index.html`, `style.css` e `app.js`, sem framework). Ele roda em outra origem e consome a API com `fetch`, então só funciona porque o CORS libera o endereço dele.
+O front fica em outro repositório, o [scene-web](https://github.com/Vikai23/scene-web), feito em **Angular 21**. Ele roda em outra origem (`http://localhost:4200`) e consome a API pelo navegador, então só funciona porque o CORS libera esse endereço. O front usa as 40 rotas: dá para fazer nele tudo o que a API oferece, no mesmo visual do Swagger UI.
 
-![Página de demonstração consumindo a API a partir de outra origem](docs/pagina-demo.png)
+![Front-end em Angular consumindo a API a partir de outra origem](docs/pagina-demo.png)
 
-Com a API no ar, há três jeitos de abrir a página:
+Com a API no ar, rode dentro da pasta do scene-web:
 
-1. **Windows, sem instalar nada:** dê dois cliques em `web/iniciar-pagina.cmd`. Ele usa o `jwebserver`, um servidor de arquivos que já vem no JDK, e abre `http://localhost:3000`.
-2. **IntelliJ:** abra `web/index.html` e clique no ícone do navegador que aparece no canto do editor.
-3. **VS Code:** botão direito em `web/index.html` → *Open with Live Server*.
+```bash
+npm install
+npm start
+```
 
-O que a página mostra:
+e abra `http://localhost:4200`.
 
-| Painel | O que acontece |
+O que dá para fazer nele:
+
+| Parte | O que faz |
 | :-- | :-- |
-| Topo | As duas origens (a da página e a da API) e se o CORS liberou a ligação entre elas |
-| Artistas | `GET /artists` paginado; os botões de página usam os links HATEOAS da resposta |
-| Versionamento | O mesmo artista com `X-API-Version: 1` e `2` |
-| Idempotência | `POST /playlists` com `X-Idempotency-Key`: o segundo envio devolve a resposta original |
-| Rate limiting | As fichas que restam e um botão que dispara 120 requisições para provocar o `429` |
-| Tráfego | Cada chamada feita, com o status e os cabeçalhos da Parte 2 |
+| Topo | Mostra os tokens que restam no bucket (headers `X-RateLimit-*`) e, depois de um `429`, a contagem do `Retry-After` |
+| Origens | A origem da página (header `Origin`), a da API e se o CORS liberou a ligação entre elas |
+| Abas Artistas, Perfis, Álbuns, Faixas e Playlists | Listagem paginada com busca, filtro (gênero, formato ou visibilidade), `sort` e `size`; os botões de página seguem os links HATEOAS |
+| Detalhes | Os campos do item, os links HATEOAS (cada um abre o recurso ou a lista para onde aponta) e as ações `PUT` e `DELETE`, pelos links `update` e `delete` |
+| Cadastro e edição | Formulários que mandam o JSON sem conferir nada antes: quem valida é a API, e o `400` aponta o erro embaixo de cada campo |
+| Idempotência | Todo `POST` leva um `X-Idempotency-Key`; o botão *Repetir o mesmo POST com a mesma key* mostra a resposta original voltando com `X-Idempotent-Replayed: true`, sem criar nada |
+| Relacionamentos | Colocar e tirar faixas de uma playlist (N:N), cadastrar um álbum a partir do artista e uma faixa a partir do álbum (1:N), e criar o perfil quando o link `profile` devolve `404` (1:1) |
+| Versões | Nos detalhes de um artista, o botão *Comparar v1 e v2* busca o mesmo artista com `X-API-Version: 1` e `2` e mostra os dois JSON lado a lado |
+| Status codes | 16 botões que provocam de propósito cada erro da API: `400` (6 casos), `403` do CORS (header e método não liberados), `404` (recurso e rota), `405`, `406`, `409`, `415`, `422` e `429` |
+| Tráfego | Cada chamada feita, com os headers enviados e recebidos e o status |
 
-Para ver o **bloqueio**, abra a mesma página por `http://127.0.0.1:3000`. Para o navegador, `127.0.0.1` e `localhost` são origens diferentes, e essa não está na lista: a página avisa "Bloqueado pelo CORS" e o Console do navegador (F12) mostra o erro completo.
+O front usa a versão padrão em todas as chamadas, menos na comparação. No Swagger UI, o seletor do topo troca a documentação inteira entre a `v1` e a `v2`.
+
+Para ver o **bloqueio**, rode `npm run start:bloqueado` no scene-web. Ele sobe o mesmo front na porta 4300, que não está na lista: a página avisa "Bloqueado pelo CORS", e o Console do navegador (F12) mostra o erro completo.
 
 ## Regras de validação
 
@@ -873,13 +882,13 @@ ORDER BY a.id;
 src/main/java/com/vinicius/scene_api
 ├── SceneApiApplication.java
 ├── assembler/    monta os links HATEOAS de cada recurso
-├── config/       carga inicial (DataLoader), OpenAPI/Swagger, versionamento, CORS, JSON estrito e interceptadores
+├── config/       carga inicial (DataLoader), OpenAPI/Swagger, versionamento, CORS, JSON estrito e interceptors
 ├── controller/   endpoints REST e a documentação de cada um (@Operation, @ApiResponse)
 ├── dto/          *Request (entrada validada), *Response (saída) e exemplos de erro
 ├── exception/    exceções de negócio, corpo padrão de erro (ApiError) e GlobalExceptionHandler
 ├── idempotency/  chave de idempotência dos POST (tabela idempotency_keys)
 ├── model/        entidades JPA e enums
-├── ratelimit/    token bucket por IP e o interceptador que aplica o limite
+├── ratelimit/    token bucket por IP e o interceptor que aplica o limite
 ├── repository/   Spring Data JPA (consultas derivadas e paginadas)
 ├── service/      regras de negócio e transações
 └── validation/   expressões regulares, mensagens e campos de ordenação aceitos
@@ -890,7 +899,6 @@ src/main/resources
 
 src/test/java     testes do token bucket e testes de integração (versionamento, idempotência, CORS, rate limiting, erros e documentação)
 
-web/              página de demonstração: site estático que consome a API a partir de outra origem
 postman/          coleção do Postman
 ```
 

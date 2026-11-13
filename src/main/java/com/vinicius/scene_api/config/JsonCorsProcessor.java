@@ -59,20 +59,20 @@ public class JsonCorsProcessor extends DefaultCorsProcessor {
         response.flushBuffer();
     }
 
-    /** Descobre qual das três checagens do CORS falhou: a origem, o método ou os cabeçalhos pedidos. */
+    /** Descobre qual das três checagens do CORS falhou: a origem, o método ou os headers pedidos. */
     private static String reason(CorsConfiguration config, HttpServletRequest request) {
         String origin = request.getHeader(HttpHeaders.ORIGIN);
         if (config.checkOrigin(origin) == null) {
             return "a origem '" + origin + "' não está na lista de origens permitidas";
         }
-        // Na consulta prévia (preflight) o método que interessa é o que o navegador pretende usar depois
+        // No preflight o método que interessa é o que o navegador pretende usar depois
         String method = isPreflight(request)
                 ? request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD)
                 : request.getMethod();
         if (!CorsConfig.ALLOWED_METHODS.contains(method)) {
             return "o método " + method + " não é aceito em requisições vindas de outra origem";
         }
-        return "a requisição pede um cabeçalho que não é aceito em requisições vindas de outra origem";
+        return "a requisição pede um header que não é aceito em requisições vindas de outra origem";
     }
 
     private static boolean isPreflight(HttpServletRequest request) {

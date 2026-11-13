@@ -9,7 +9,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    /** Rotas da API. Swagger UI, console do H2 e arquivos estáticos ficam de fora dos interceptadores. */
+    /** Rotas da API. Swagger UI, console do H2 e arquivos estáticos ficam de fora dos interceptors. */
     private static final String[] API_PATHS = {
             "/artists", "/artists/**",
             "/artist-profiles", "/artist-profiles/**",
@@ -37,8 +37,8 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     /**
-     * Interceptadores que rodam antes dos controllers, nesta ordem: o rate limiting (requisição barrada nem
-     * chega ao controller), a checagem do cabeçalho Accept (406 antes de executar qualquer coisa) e, por
+     * Interceptors que rodam antes dos controllers, nesta ordem: o rate limiting (requisição barrada nem
+     * chega ao controller), a checagem do header Accept (406 antes de executar qualquer coisa) e, por
      * último, o que devolve a versão da API usada.
      */
     @Override
