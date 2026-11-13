@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "05809ea7-cd3c-5032-ba30-51bce515b93d",
 		"name": "scene-api",
-		"description": "Coleção da Scene API (Spring Boot). Rode com a aplicação em localhost:8080. Ordem sugerida: pastas 0 a 11, de cima para baixo (cada pasta guarda ids que a seguinte usa). A pasta 0 gera a chave de API que a coleção envia no header X-API-Key (aba Authorization) e mostra os 401. Pastas 1 a 7: CRUD, relacionamentos e erros (400, 404, 405, 406, 409 e 415). Pastas 8 a 11: versionamento por header, idempotência (422), CORS (403) e rate limiting (429). A API aceita 100 requisições por minuto por IP: o script da coleção espera sozinho quando os tokens estão acabando, por isso o final da execução é mais lento.",
+		"description": "Coleção da Scene API (Spring Boot). Rode com a aplicação em localhost:8080. Ordem sugerida: pastas 0 a 11, de cima para baixo (cada pasta guarda ids que a seguinte usa). A pasta 0 gera a chave de API que a coleção envia no header X-API-Key (aba Authorization) e mostra os 401. Pastas 1 a 7: CRUD, relacionamentos e erros (400, 404, 405, 406, 409 e 415). Pastas 8 a 11: versionamento por header, idempotência (422), CORS (403) e rate limiting (429). A API aceita 30 requisições por minuto por IP: o script da coleção espera sozinho quando os tokens estão acabando, por isso a execução leva cerca de 3 minutos.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -5810,7 +5810,7 @@
 		},
 		{
 			"name": "11. Rate limiting (token bucket)",
-			"description": "Parte 2. Cada IP tem um bucket de 100 tokens; cada requisição consome um e o bucket recebe 100 tokens por minuto. Sem tokens a resposta é 429 Too Many Requests, com Retry-After. Esta pasta fica por último porque esvazia o bucket.",
+			"description": "Parte 2. Cada IP tem um bucket de 30 tokens; cada requisição consome um e o bucket recebe 30 tokens por minuto. Sem tokens a resposta é 429 Too Many Requests, com Retry-After. Esta pasta fica por último porque esvazia o bucket.",
 			"item": [
 				{
 					"name": "Rate limit headers on a normal response",
@@ -5866,10 +5866,10 @@
 								"type": "text/javascript",
 								"exec": [
 									"// Esvazia o bucket: dispara de uma vez mais requisições do que a capacidade.",
-									"// Os tokens voltam aos poucos (um a cada 0,6 s com a configuração padrão). Para a requisição desta aba não",
+									"// Os tokens voltam aos poucos (um a cada 2 s com a configuração padrão). Para a requisição desta aba não",
 									"// pegar um token que acabou de voltar, o script espera o próximo token e gasta esse também; a requisição",
 									"// sai logo em seguida (o Postman só a envia depois que todas as respostas chegam) e encontra o bucket vazio.",
-									"const capacity = Number(pm.variables.get('rateLimit')) || 100;",
+									"const capacity = Number(pm.variables.get('rateLimit')) || 30;",
 									"const total = capacity + 20;",
 									"const address = pm.variables.replaceIn('{{baseUrl}}/artists?page=0&size=1');",
 									"let answered = 0;",
@@ -6068,7 +6068,7 @@
 			"script": {
 				"type": "text/javascript",
 				"exec": [
-					"// A API aceita 100 requisições por minuto por IP (rate limiting por token bucket) e a coleção inteira passa disso.",
+					"// A API aceita 30 requisições por minuto por IP (rate limiting por token bucket) e a coleção inteira passa disso.",
 					"// Este script lê quantos tokens restam (headers X-RateLimit-*) e espera a reposição quando eles estão acabando,",
 					"// para a coleção rodar de uma vez sem receber 429 fora da pasta 11.",
 					"const RESERVE = 2; // tokens que precisam estar no bucket antes de enviar",

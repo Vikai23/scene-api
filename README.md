@@ -114,7 +114,7 @@ Os ids criados são guardados automaticamente em variáveis (`artistId`, `profil
 | 10. CORS | Origem permitida, origem bloqueada (`403`) e o preflight (`OPTIONS`) |
 | 11. Rate limiting | Headers `X-RateLimit-*`, o burst que esvazia o bucket (`429`) e a volta depois da espera |
 
-> **A coleção respeita o rate limit.** A API aceita 100 requisições por minuto por IP e a coleção inteira passa disso. Por isso ela tem um script próprio (aba **Scripts** da coleção) que lê os headers `X-RateLimit-*` de cada resposta e espera a reposição dos tokens quando eles estão acabando. O fim da execução fica mais lento, e uma segunda execução logo em seguida leva cerca de 1 minuto. Reiniciar a aplicação enche o bucket de novo.
+> **A coleção respeita o rate limit.** A API aceita 30 requisições por minuto por IP e a coleção inteira passa disso. Por isso ela tem um script próprio (aba **Scripts** da coleção) que lê os headers `X-RateLimit-*` de cada resposta e espera a reposição dos tokens quando eles estão acabando. A execução inteira leva cerca de 3 minutos. Reiniciar a aplicação enche o bucket de novo.
 
 ## Dados iniciais
 
@@ -308,7 +308,7 @@ O JSON de entrada é **estrito**: cada campo só aceita o tipo dele. Texto em ca
 | [Versionamento](#versionamento-por-header) | Header `X-API-Version`: `1` ou `2` (sem ele vale a `1`) | `config/ApiVersionConfig`, `ArtistController` |
 | [Idempotência](#idempotência) | Header opcional `X-Idempotency-Key` nos 7 `POST` | pacote `idempotency/` |
 | [Chave de API](#chave-de-api-x-api-key) | Header `X-API-Key` nas rotas que alteram dados; a chave é gerada em `POST /api-keys` | pacote `apikey/`, `ApiKeyController` |
-| [Rate limiting](#rate-limiting-token-bucket) | Token bucket por IP: bucket de 100 tokens, 100 novos por minuto | pacote `ratelimit/` |
+| [Rate limiting](#rate-limiting-token-bucket) | Token bucket por IP: bucket de 30 tokens, 30 novos por minuto | pacote `ratelimit/` |
 | [CORS](#cors) | Só as origens listadas em `scene.cors.allowed-origins` | `config/CorsConfig`, `config/JsonCorsProcessor` |
 
 CORS, rate limiting e idempotência são configurados no `application.properties` (`scene.cors.*`, `scene.rate-limit.*` e `scene.idempotency.*`). Os cinco estão documentados no Swagger: cada rota lista os headers novos e os erros `401`, `403`, `406`, `422` e `429` onde eles podem acontecer.
@@ -406,7 +406,7 @@ No Swagger UI, gere a chave em `POST /api-keys`, clique em **Authorize** e cole 
 
 ### Rate limiting (token bucket)
 
-Cada IP tem um bucket com 100 tokens. Cada chamada a uma rota da API consome um token, e o bucket recebe 100 tokens por minuto, aos poucos (um a cada 0,6 s), até voltar a ficar cheio. Com isso o cliente pode fazer um burst de até 100 requisições seguidas, mas na média não passa de 100 por minuto. Swagger UI, Console do H2 e arquivos estáticos ficam fora do limite.
+Cada IP tem um bucket com 30 tokens. Cada chamada a uma rota da API consome um token, e o bucket recebe 30 tokens por minuto, aos poucos (um a cada 2 s), até voltar a ficar cheio. Com isso o cliente pode fazer um burst de até 30 requisições seguidas, mas na média não passa de 30 por minuto. Swagger UI, Console do H2 e arquivos estáticos ficam fora do limite.
 
 Toda resposta informa o saldo:
 
@@ -430,7 +430,7 @@ Com o bucket vazio:
 }
 ```
 
-Para ver o `429` à mão, sem precisar de 100 requisições, suba a API com um bucket pequeno: troque no `application.properties` para `scene.rate-limit.capacity=5` e `scene.rate-limit.refill-tokens=5`. No sexto clique seguido no Swagger vem o `429`.
+Para ver o `429` à mão, sem precisar de 30 requisições, suba a API com um bucket pequeno: troque no `application.properties` para `scene.rate-limit.capacity=5` e `scene.rate-limit.refill-tokens=5`. No sexto clique seguido no Swagger vem o `429`.
 
 ### CORS
 

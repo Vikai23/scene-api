@@ -161,7 +161,7 @@ public class SwaggerConfig {
                         .description(description)
                         .termsOfService("/termos-de-uso.html")
                         .contact(new Contact()
-                                .name("Vinícius Alves e Sousa")
+                                .name("Vinícius Alves e Sousa (github.com/Vikai23)")
                                 .url("https://github.com/Vikai23"))
                         .license(new License()
                                 .name("Apache 2.0")
