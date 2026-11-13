@@ -1,5 +1,6 @@
 package com.vinicius.scene_api.exception;
 
+import com.vinicius.scene_api.apikey.ApiKeyService;
 import com.vinicius.scene_api.config.ApiVersionConfig;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -50,7 +51,7 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    // ---------- 404 / 409 / 400 / 422 / 429 lançados pela própria API ----------
+    // ---------- 404 / 409 / 400 / 401 / 422 / 429 lançados pela própria API ----------
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
@@ -71,6 +72,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IdempotencyKeyReuseException.class)
     public ResponseEntity<ApiError> handleIdempotencyKeyReuse(IdempotencyKeyReuseException ex, HttpServletRequest request) {
         return build(HttpStatus.UNPROCESSABLE_CONTENT, ex.getMessage(), request, List.of());
+    }
+
+    /**
+     * Chave de API: rota protegida chamada sem o header X-API-Key, com uma chave que não existe ou com uma chave
+     * revogada. O header WWW-Authenticate diz ao cliente como se autenticar.
+     */
+    @ExceptionHandler(InvalidApiKeyException.class)
+    public ResponseEntity<ApiError> handleInvalidApiKey(InvalidApiKeyException ex, HttpServletRequest request) {
+        ApiError body = new ApiError(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                ex.getMessage(), request.getRequestURI(), LocalDateTime.now(), List.of());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .header(HttpHeaders.WWW_AUTHENTICATE, ApiKeyService.CHALLENGE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body);
     }
 
     /** Rate limiting: o cliente consumiu todos os tokens. O header Retry-After diz quanto esperar. */

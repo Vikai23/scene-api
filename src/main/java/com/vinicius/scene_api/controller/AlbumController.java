@@ -1,5 +1,6 @@
 package com.vinicius.scene_api.controller;
 
+import com.vinicius.scene_api.apikey.RequiresApiKey;
 import com.vinicius.scene_api.assembler.AlbumModelAssembler;
 import com.vinicius.scene_api.dto.AlbumRequest;
 import com.vinicius.scene_api.dto.AlbumResponse;
@@ -178,6 +179,7 @@ public class AlbumController {
                             schema = @Schema(implementation = ApiError.class),
                             examples = @ExampleObject(name = "Título duplicado", value = ErrorExamples.CONFLICT_ALBUM)))
     })
+    @RequiresApiKey
     @PostMapping
     public ResponseEntity<EntityModel<AlbumResponse>> create(
             @RequestHeader(name = IdempotencyService.HEADER, required = false) String idempotencyKey,
@@ -212,6 +214,7 @@ public class AlbumController {
                             schema = @Schema(implementation = ApiError.class),
                             examples = @ExampleObject(name = "Título duplicado", value = ErrorExamples.CONFLICT_ALBUM)))
     })
+    @RequiresApiKey
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<AlbumResponse>> update(
             @Parameter(description = "Id do álbum a atualizar", example = "1")
@@ -235,6 +238,7 @@ public class AlbumController {
                             schema = @Schema(implementation = ApiError.class),
                             examples = @ExampleObject(name = "Não encontrado", value = ErrorExamples.NOT_FOUND_ALBUM)))
     })
+    @RequiresApiKey
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @Parameter(description = "Id do álbum a remover", example = "1")

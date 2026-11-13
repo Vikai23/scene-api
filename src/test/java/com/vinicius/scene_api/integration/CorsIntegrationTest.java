@@ -48,12 +48,13 @@ class CorsIntegrationTest extends IntegrationTestSupport {
         HttpResponse<String> response = send("OPTIONS", "/artists", null,
                 "Origin", ALLOWED_ORIGIN,
                 "Access-Control-Request-Method", "POST",
-                "Access-Control-Request-Headers", "content-type, x-idempotency-key");
+                "Access-Control-Request-Headers", "content-type, x-idempotency-key, x-api-key");
 
         assertEquals(200, response.statusCode());
         assertEquals(ALLOWED_ORIGIN, header(response, "Access-Control-Allow-Origin"));
         assertEquals("GET,POST,PUT,DELETE,OPTIONS", header(response, "Access-Control-Allow-Methods"));
         assertTrue(header(response, "Access-Control-Allow-Headers").toLowerCase().contains("x-idempotency-key"));
+        assertTrue(header(response, "Access-Control-Allow-Headers").toLowerCase().contains("x-api-key"));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.vinicius.scene_api.controller;
 
+import com.vinicius.scene_api.apikey.RequiresApiKey;
 import com.vinicius.scene_api.assembler.ArtistModelAssembler;
 import com.vinicius.scene_api.assembler.ArtistV2ModelAssembler;
 import com.vinicius.scene_api.config.ApiVersionConfig;
@@ -168,6 +169,7 @@ public class ArtistController {
                             schema = @Schema(implementation = ApiError.class),
                             examples = @ExampleObject(name = "Nome duplicado", value = ErrorExamples.CONFLICT_ARTIST)))
     })
+    @RequiresApiKey
     @PostMapping
     public ResponseEntity<EntityModel<ArtistResponse>> create(
             @RequestHeader(name = IdempotencyService.HEADER, required = false) String idempotencyKey,
@@ -199,6 +201,7 @@ public class ArtistController {
                             schema = @Schema(implementation = ApiError.class),
                             examples = @ExampleObject(name = "Nome duplicado", value = ErrorExamples.CONFLICT_ARTIST)))
     })
+    @RequiresApiKey
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<ArtistResponse>> update(
             @Parameter(description = "Id do artista a atualizar", example = "1")
@@ -222,6 +225,7 @@ public class ArtistController {
                             schema = @Schema(implementation = ApiError.class),
                             examples = @ExampleObject(name = "Não encontrado", value = ErrorExamples.NOT_FOUND_ARTIST)))
     })
+    @RequiresApiKey
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @Parameter(description = "Id do artista a remover", example = "1")

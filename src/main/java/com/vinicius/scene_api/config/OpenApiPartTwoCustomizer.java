@@ -1,5 +1,6 @@
 package com.vinicius.scene_api.config;
 
+import com.vinicius.scene_api.apikey.ApiKeyService;
 import com.vinicius.scene_api.dto.ErrorExamples;
 import com.vinicius.scene_api.idempotency.IdempotencyService;
 import com.vinicius.scene_api.ratelimit.RateLimitInterceptor;
@@ -31,9 +32,9 @@ import java.util.Map;
 
 /**
  * Documenta no Swagger os recursos da Parte 2 que valem para várias rotas de uma vez: versionamento,
- * CORS, rate limiting e idempotência. Em vez de repetir as mesmas anotações nos 40 métodos dos controllers,
+ * chave de API, CORS, rate limiting e idempotência. Em vez de repetir as mesmas anotações nos 43 métodos dos controllers,
  * este customizer percorre as operações já geradas pelo springdoc e acrescenta em cada uma os headers
- * e os erros que podem acontecer ali (400 de versão inválida, 403, 406, 415, 422 e 429).
+ * e os erros que podem acontecer ali (400 de versão inválida, 401, 403, 406, 415, 422 e 429).
  */
 @Component
 public class OpenApiPartTwoCustomizer implements GlobalOpenApiCustomizer {
@@ -96,6 +97,9 @@ public class OpenApiPartTwoCustomizer implements GlobalOpenApiCustomizer {
                     documentApiVersion(operation, versioned);
 
                     // demais status que valem para várias rotas
+                    if (operation.getSecurity() != null && !operation.getSecurity().isEmpty()) {
+                        documentApiKey(operation);
+                    }
                     documentCors(operation);
                     documentNotAcceptable(operation);
                     if (hasBody) {
@@ -216,6 +220,23 @@ public class OpenApiPartTwoCustomizer implements GlobalOpenApiCustomizer {
         ok.setContent(new Content().addMediaType(JSON, body));
     }
 
+    // ---------- Chave de API ----------
+
+    /** Rota protegida (cadeado no Swagger UI): sem uma chave válida no header X-API-Key, a resposta é 401. */
+    private void documentApiKey(Operation operation) {
+        operation.setDescription(operation.getDescription() + " Exige uma chave de API válida no header `"
+                + ApiKeyService.HEADER + "` (no Swagger UI, botão **Authorize**).");
+        ApiResponse unauthorized = errorResponse("Unauthorized – sem o header " + ApiKeyService.HEADER
+                + ", com uma chave que não existe ou com uma chave revogada");
+        unauthorized.addHeaderObject(HttpHeaders.WWW_AUTHENTICATE, new Header()
+                .description("Como se autenticar: enviar a chave de API no header " + ApiKeyService.HEADER)
+                .schema(new StringSchema().example(ApiKeyService.CHALLENGE)));
+        addExample(unauthorized, "Sem chave", ErrorExamples.UNAUTHORIZED_MISSING);
+        addExample(unauthorized, "Chave inexistente", ErrorExamples.UNAUTHORIZED_UNKNOWN);
+        addExample(unauthorized, "Chave revogada", ErrorExamples.UNAUTHORIZED_REVOKED);
+        operation.getResponses().addApiResponse("401", unauthorized);
+    }
+
     // ---------- CORS ----------
 
     private void documentCors(Operation operation) {
@@ -280,8 +301,12 @@ public class OpenApiPartTwoCustomizer implements GlobalOpenApiCustomizer {
         if (conflict != null) {
             conflict.setDescription(conflict.getDescription() + "; outra requisição com a mesma chave de idempotência "
                     + "ainda está sendo processada");
-            addExample(conflict, "Chave em processamento", ErrorExamples.CONFLICT_IDEMPOTENCY_IN_PROGRESS);
+        } else {
+            // POST sem 409 próprio (ex.: gerar chave de API): o único conflito possível é o da idempotência
+            conflict = errorResponse("Conflict – outra requisição com a mesma chave de idempotência ainda está sendo processada");
+            operation.getResponses().addApiResponse("409", conflict);
         }
+        addExample(conflict, "Chave em processamento", ErrorExamples.CONFLICT_IDEMPOTENCY_IN_PROGRESS);
 
         ApiResponse unprocessable = errorResponse("Unprocessable Content – a chave de idempotência já foi usada em uma requisição "
                 + "diferente (outra rota ou outro corpo)");

@@ -1,5 +1,6 @@
 package com.vinicius.scene_api.controller;
 
+import com.vinicius.scene_api.apikey.RequiresApiKey;
 import com.vinicius.scene_api.assembler.PlaylistModelAssembler;
 import com.vinicius.scene_api.assembler.TrackModelAssembler;
 import com.vinicius.scene_api.dto.ErrorExamples;
@@ -189,6 +190,7 @@ public class TrackController {
                             schema = @Schema(implementation = ApiError.class),
                             examples = @ExampleObject(name = "Número duplicado", value = ErrorExamples.CONFLICT_TRACK)))
     })
+    @RequiresApiKey
     @PostMapping
     public ResponseEntity<EntityModel<TrackResponse>> create(
             @RequestHeader(name = IdempotencyService.HEADER, required = false) String idempotencyKey,
@@ -223,6 +225,7 @@ public class TrackController {
                             schema = @Schema(implementation = ApiError.class),
                             examples = @ExampleObject(name = "Número duplicado", value = ErrorExamples.CONFLICT_TRACK)))
     })
+    @RequiresApiKey
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<TrackResponse>> update(
             @Parameter(description = "Id da faixa a atualizar", example = "1")
@@ -246,6 +249,7 @@ public class TrackController {
                             schema = @Schema(implementation = ApiError.class),
                             examples = @ExampleObject(name = "Não encontrada", value = ErrorExamples.NOT_FOUND_TRACK)))
     })
+    @RequiresApiKey
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @Parameter(description = "Id da faixa a remover", example = "1")
