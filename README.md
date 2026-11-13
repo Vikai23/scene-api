@@ -1,12 +1,12 @@
 # Scene API
 
-API REST de catálogo musical em **Java 21** e **Spring Boot**: artistas, perfis, álbuns, faixas e playlists, com os três tipos de relacionamento (1:1, 1:N e N:N), paginação, validação, links HATEOAS e documentação Swagger. Na Parte 2 entraram versionamento por header, idempotência, autenticação por chave de API, rate limiting e CORS, com um front-end em Angular, em outro repositório, que consome a API a partir de outra origem.
+API REST de catálogo musical em **Java 21** e **Spring Boot**: artistas, perfis, álbuns, faixas e playlists, com os três tipos de relacionamento (1:1, 1:N e N:N), paginação, validação, links HATEOAS e documentação Swagger. Na Parte 2 entraram versionamento por header, idempotência, rate limiting e CORS, com um front-end em Angular, em outro repositório, que consome a API a partir de outra origem.
 
 > Projeto final da disciplina de **Web Services** (Senac TSI) — **Parte 1** (out/2026) e **Parte 2** (nov/2026).
 
 [![CI](https://github.com/Vikai23/scene-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Vikai23/scene-api/actions/workflows/ci.yml)
 
-**43 endpoints** · **129 requisições no Postman** (62 delas de erro) · **47 testes automatizados** · **105 registros de exemplo** carregados ao subir
+**40 endpoints** · **120 requisições no Postman** (58 delas de erro) · **40 testes automatizados** · **105 registros de exemplo** carregados ao subir
 
 ![Swagger UI da Scene API, com tema customizado e o seletor Versão da API](docs/swagger-hero.png)
 
@@ -31,13 +31,13 @@ API REST de catálogo musical em **Java 21** e **Spring Boot**: artistas, perfis
 
 - **Arquitetura em camadas:** `controller` → `service` → `repository`, com DTOs separados para entrada (`*Request`) e saída (`*Response`). As entidades JPA não vazam para fora da API.
 - **Os três relacionamentos do enunciado:** 1:1 (artista ↔ perfil), 1:N (artista → álbuns → faixas) e N:N (playlists ↔ faixas), cada um com endpoints próprios de consulta.
-- **Erros padronizados:** um `GlobalExceptionHandler` devolve sempre o mesmo corpo, com a lista campo a campo nos erros de validação. Treze status diferentes, cada um com o seu caso, e cada rota lista no Swagger todos os erros que podem acontecer nela. ([detalhes](#erros))
+- **Erros padronizados:** um `GlobalExceptionHandler` devolve sempre o mesmo corpo, com a lista campo a campo nos erros de validação. Doze status diferentes, cada um com o seu caso, e cada rota lista no Swagger todos os erros que podem acontecer nela. ([detalhes](#erros))
 - **Validação em dois níveis:** as mesmas regras nos DTOs de entrada e nas entidades (Bean Validation), com expressões regulares compartilhadas em `validation/`.
 - **HATEOAS (HAL):** cada recurso traz `_links` para si mesmo, para a coleção e para os recursos relacionados; as listagens vêm em `PagedModel`.
 - **Paginação e ordenação** em todas as listagens, inclusive nas buscas e nas consultas por relação.
-- **Parte 2, recursos avançados:** versionamento por header (`X-API-Version`), idempotência nos `POST` (`X-Idempotency-Key`), autenticação por chave de API nas rotas que alteram dados (`X-API-Key`, `401` sem chave válida), rate limiting por token bucket (`429` com `Retry-After`) e CORS para origens específicas. ([detalhes](#parte-2-recursos-avançados))
-- **Front-end em Angular:** o [scene-web](https://github.com/Vikai23/scene-web) é um repositório separado que roda em outra origem e usa as 43 rotas pelo navegador. Ele tem o CRUD das 5 entidades, a chave de API, a comparação das duas versões, idempotência, o medidor do rate limit e uma aba que provoca cada erro. O CORS é o que libera a ligação entre os dois. ([detalhes](#front-end-em-angular))
-- **Testado:** 47 testes automatizados (JUnit), a maioria subindo a aplicação inteira e fazendo requisições HTTP de verdade, e coleção do Postman com 309 testes de status, de corpo, de headers e de links — incluindo 62 casos de erro.
+- **Parte 2, recursos avançados:** versionamento por header (`X-API-Version`), idempotência nos `POST` (`X-Idempotency-Key`), rate limiting por token bucket (`429` com `Retry-After`) e CORS para origens específicas. ([detalhes](#parte-2-recursos-avançados))
+- **Front-end em Angular:** o [scene-web](https://github.com/Vikai23/scene-web) é um repositório separado que roda em outra origem e usa as 40 rotas pelo navegador. Ele tem o CRUD das 5 entidades, a comparação das duas versões, idempotência, o medidor do rate limit e uma aba que provoca cada erro. O CORS é o que libera a ligação entre os dois. ([detalhes](#front-end-em-angular))
+- **Testado:** 40 testes automatizados (JUnit), a maioria subindo a aplicação inteira e fazendo requisições HTTP de verdade, e coleção do Postman com 288 testes de status, de corpo, de headers e de links — incluindo 58 casos de erro.
 
 ### Tecnologias
 
@@ -75,15 +75,15 @@ A API sobe em `http://localhost:8080`; abrir a raiz já redireciona para o Swagg
 
 No Console do H2: JDBC URL `jdbc:h2:mem:scenedb`, usuário `sa`, senha em branco.
 
-O Swagger UI tem tema próprio e traz, além dos 43 endpoints, o modelo de dados, as convenções de paginação e a tabela de status:
+O Swagger UI tem tema próprio e traz, além dos 40 endpoints, o modelo de dados, as convenções de paginação e a tabela de status:
 
 <!-- Captura dos endpoints: abra o grupo ARTISTAS no Swagger (deixando os endpoints recolhidos),
      tire o print e salve como docs/swagger-endpoints.png; depois descomente a linha abaixo.
-     ![Os 43 endpoints, agrupados por recurso](docs/swagger-endpoints.png) -->
+     ![Os 40 endpoints, agrupados por recurso](docs/swagger-endpoints.png) -->
 
 ![Tabela de status HTTP documentada no Swagger UI](docs/swagger-erros.png)
 
-Para rodar os 47 testes automatizados (os de integração sobem a aplicação inteira em uma porta livre, com o H2 e a carga inicial, e fazem requisições HTTP de verdade):
+Para rodar os 40 testes automatizados (os de integração sobem a aplicação inteira em uma porta livre, com o H2 e a carga inicial, e fazem requisições HTTP de verdade):
 
 ```bash
 ./mvnw test
@@ -91,17 +91,16 @@ Para rodar os 47 testes automatizados (os de integração sobem a aplicação in
 
 ### Coleção do Postman
 
-A coleção está em [`postman/scene-api.postman_collection.json`](postman/scene-api.postman_collection.json): **129 requisições** e **309 testes**, em 12 pastas — os 43 endpoints, os passos extras de fluxo, 62 casos de erro (`400`, `401`, `403`, `404`, `405`, `406`, `409`, `415`, `422` e `429`) e as demonstrações da Parte 2.
+A coleção está em [`postman/scene-api.postman_collection.json`](postman/scene-api.postman_collection.json): **120 requisições** e **288 testes**, em 11 pastas — os 40 endpoints, os passos extras de fluxo, 58 casos de erro (`400`, `403`, `404`, `405`, `406`, `409`, `415`, `422` e `429`) e as demonstrações da Parte 2.
 
 1. No Postman: **Import** → selecione o arquivo `.json`.
 2. Suba a aplicação (`http://localhost:8080`). A variável `baseUrl` já vem configurada.
-3. Rode as pastas **0 a 11**, de cima para baixo (ou use o **Collection Runner**).
+3. Rode as pastas **1 a 11**, de cima para baixo (ou use o **Collection Runner**).
 
-Os ids criados são guardados automaticamente em variáveis (`artistId`, `profileId`, `albumId`, `trackId`, `track2Id` e `playlistId`), e cada requisição tem testes de status, de corpo, de headers e de links HATEOAS. A pasta 0 gera a chave de API e guarda em `apiKey`, que a aba **Authorization** da coleção envia no header `X-API-Key` de todas as requisições.
+Os ids criados são guardados automaticamente em variáveis (`artistId`, `profileId`, `albumId`, `trackId`, `track2Id` e `playlistId`), e cada requisição tem testes de status, de corpo, de headers e de links HATEOAS.
 
 | Pasta | O que faz |
 | :-- | :-- |
-| 0. Chave de API | Gera a chave que a coleção usa (`POST /api-keys`), consulta e revoga (`/api-keys/me`) e os `401`: sem chave, chave inexistente e chave revogada |
 | 1. Artists | CRUD de artistas, buscas e erros de validação |
 | 2. Artist Profiles | Perfil do artista criado na pasta 1 (relação 1:1) |
 | 3. Albums | Álbuns do artista (relação 1:N) |
@@ -288,7 +287,6 @@ Erro de validação, campo a campo:
 | `201 Created` | Recurso criado (o header `Location` aponta para ele) |
 | `204 No Content` | Remoção bem-sucedida |
 | `400 Bad Request` | Validação falhou, JSON malformado ou com valor de tipo errado, id ou enum inválido, parâmetro ausente ou em branco, ordenação inválida, versão da API inexistente, chave de idempotência fora do formato |
-| `401 Unauthorized` | Rota que altera dados chamada sem o header `X-API-Key`, com uma chave que não existe ou com uma chave revogada |
 | `403 Forbidden` | Requisição de uma origem que o CORS não libera |
 | `404 Not Found` | Recurso (ou artista/álbum/playlist/faixa referenciado) não existe, ou rota inexistente |
 | `405 Method Not Allowed` | Verbo HTTP não suportado pela rota |
@@ -306,12 +304,11 @@ O JSON de entrada é **estrito**: cada campo só aceita o tipo dele. Texto em ca
 | Recurso | Como funciona | Onde está no código |
 | :-- | :-- | :-- |
 | [Versionamento](#versionamento-por-header) | Header `X-API-Version`: `1` ou `2` (sem ele vale a `1`) | `config/ApiVersionConfig`, `ArtistController` |
-| [Idempotência](#idempotência) | Header opcional `X-Idempotency-Key` nos 7 `POST` | pacote `idempotency/` |
-| [Chave de API](#chave-de-api-x-api-key) | Header `X-API-Key` nas rotas que alteram dados; a chave é gerada em `POST /api-keys` | pacote `apikey/`, `ApiKeyController` |
+| [Idempotência](#idempotência) | Header opcional `X-Idempotency-Key` nos 6 `POST` | pacote `idempotency/` |
 | [Rate limiting](#rate-limiting-token-bucket) | Token bucket por IP: bucket de 30 tokens, 30 novos por minuto | pacote `ratelimit/` |
 | [CORS](#cors) | Só as origens listadas em `scene.cors.allowed-origins` | `config/CorsConfig`, `config/JsonCorsProcessor` |
 
-CORS, rate limiting e idempotência são configurados no `application.properties` (`scene.cors.*`, `scene.rate-limit.*` e `scene.idempotency.*`). Os cinco estão documentados no Swagger: cada rota lista os headers novos e os erros `401`, `403`, `406`, `422` e `429` onde eles podem acontecer.
+Os quatro são configurados no `application.properties` (`scene.cors.*`, `scene.rate-limit.*` e `scene.idempotency.*`) e estão documentados no Swagger: cada rota lista os headers novos e os erros `403`, `406`, `422` e `429` onde eles podem acontecer.
 
 ### Versionamento por header
 
@@ -362,48 +359,6 @@ Para resolver, o cliente gera um valor único (o ideal é um UUID) e manda no he
 
 A chave vale por 24 horas (`scene.idempotency.ttl`). A chave e o registro criado são gravados na mesma transação, então não existe o caso de a chave ficar guardada sem o registro, nem o contrário.
 
-### Chave de API (`X-API-Key`)
-
-As rotas que alteram dados exigem uma chave de API no header `X-API-Key`: os `POST`, `PUT` e `DELETE` de artistas, perfis, álbuns, faixas e playlists. As consultas (`GET`) continuam abertas, e gerar uma chave também.
-
-| Rota | O que faz | Exige chave? |
-| :-- | :-- | :-- |
-| `POST /api-keys` | Gera uma chave para o usuário informado em `owner`. A chave completa vem só nesta resposta | Não |
-| `GET /api-keys/me` | Mostra a chave enviada no header: dono, prefixo, se está ativa e quando foi gerada | Sim |
-| `DELETE /api-keys/me` | Revoga a chave enviada no header | Sim |
-
-Resposta do `POST /api-keys`:
-
-```json
-{
-  "id": 1,
-  "owner": "Vinícius",
-  "key": "scn_q8Xv2LmA9fKd0pRt7wYz3bNc5hJe1uSg",
-  "prefix": "scn_q8Xv2LmA",
-  "active": true,
-  "createdAt": "2026-11-13T00:50:12",
-  "_links": {
-    "self": { "href": "http://localhost:8080/api-keys/me" },
-    "delete": { "href": "http://localhost:8080/api-keys/me" }
-  }
-}
-```
-
-| Situação | Resposta |
-| :-- | :-- |
-| Rota protegida sem o header `X-API-Key` | `401 Unauthorized` |
-| Chave que não existe | `401 Unauthorized` |
-| Chave revogada | `401 Unauthorized` |
-| Chave válida | A rota funciona normalmente |
-
-Cada `401` traz uma mensagem própria e o header `WWW-Authenticate: ApiKey realm="Scene API", header="X-API-Key"`.
-
-A chave é `scn_` seguido de 32 caracteres aleatórios (`SecureRandom`). O banco guarda só o hash SHA-256 dela e o começo (`prefix`), que serve para reconhecer a chave sem mostrar o valor. Por isso a chave completa aparece uma única vez, na resposta do `POST`. Se esse `POST` vier com `X-Idempotency-Key`, a resposta guardada para o replay também traz a chave, durante as 24 horas da idempotência.
-
-Quem confere a chave é o `ApiKeyInterceptor`. Ele roda antes do controller nas rotas marcadas com `@RequiresApiKey`, então uma requisição sem chave válida não chega a validar o corpo nem a gravar nada.
-
-No Swagger UI, gere a chave em `POST /api-keys`, clique em **Authorize** e cole a chave. As rotas com cadeado passam a enviar o header.
-
 ### Rate limiting (token bucket)
 
 Cada IP tem um bucket com 30 tokens. Cada chamada a uma rota da API consome um token, e o bucket recebe 30 tokens por minuto, aos poucos (um a cada 2 s), até voltar a ficar cheio. Com isso o cliente pode fazer um burst de até 30 requisições seguidas, mas na média não passa de 30 por minuto. Swagger UI, Console do H2 e arquivos estáticos ficam fora do limite.
@@ -441,14 +396,14 @@ Navegadores só deixam o JavaScript de uma página ler a resposta de outra orige
 | `http://localhost:4200` | O front-end em Angular ([scene-web](https://github.com/Vikai23/scene-web)), rodando com `npm start` |
 
 - **Métodos liberados:** `GET`, `POST`, `PUT`, `DELETE` e `OPTIONS` (o *preflight* que o navegador faz antes de certas requisições).
-- **Headers que a página pode enviar:** `Content-Type`, `Accept`, `X-API-Version`, `X-Idempotency-Key` e `X-API-Key`.
+- **Headers que a página pode enviar:** `Content-Type`, `Accept`, `X-API-Version` e `X-Idempotency-Key`.
 - **Headers que a página pode ler:** `Location`, `Retry-After`, `X-API-Version`, `X-Idempotent-Replayed` e os três `X-RateLimit-*`.
 - **Origem fora da lista:** `403 Forbidden`, no mesmo corpo de erro das outras respostas.
 - **Sem o header `Origin`** (Postman, curl e o próprio Swagger UI, que tem a mesma origem da API) a checagem não acontece.
 
 ### Front-end em Angular
 
-O front fica em outro repositório, o [scene-web](https://github.com/Vikai23/scene-web), feito em **Angular 21**. Ele roda em outra origem (`http://localhost:4200`) e consome a API pelo navegador, então só funciona porque o CORS libera esse endereço. O front usa as 43 rotas: dá para fazer nele tudo o que a API oferece, no mesmo visual do Swagger UI.
+O front fica em outro repositório, o [scene-web](https://github.com/Vikai23/scene-web), feito em **Angular 21**. Ele roda em outra origem (`http://localhost:4200`) e consome a API pelo navegador, então só funciona porque o CORS libera esse endereço. O front usa as 40 rotas: dá para fazer nele tudo o que a API oferece, no mesmo visual do Swagger UI.
 
 ![Front-end em Angular consumindo a API a partir de outra origem](docs/pagina-demo.png)
 
@@ -467,15 +422,14 @@ O que dá para fazer nele:
 | :-- | :-- |
 | Topo | Mostra os tokens que restam no bucket (headers `X-RateLimit-*`) e, depois de um `429`, a contagem do `Retry-After` |
 | Origens | A origem da página (header `Origin`), a da API e se o CORS liberou a ligação entre elas |
-| Chave de API | Gera a chave (`POST /api-keys`), confere e revoga (`GET` e `DELETE /api-keys/me`). Com uma chave ativa, o front manda o `X-API-Key` em todo `POST`, `PUT` e `DELETE`; sem ela, essas ações voltam `401` |
 | Abas Artistas, Perfis, Álbuns, Faixas e Playlists | Listagem paginada com busca, filtro (gênero, formato ou visibilidade), `sort` e `size`; os botões de página seguem os links HATEOAS |
 | Detalhes | Os campos do item, os links HATEOAS (cada um abre o recurso ou a lista para onde aponta) e as ações `PUT` e `DELETE`, pelos links `update` e `delete` |
 | Cadastro e edição | Formulários que mandam o JSON sem conferir nada antes: quem valida é a API, e o `400` aponta o erro embaixo de cada campo |
 | Idempotência | Todo `POST` leva um `X-Idempotency-Key`; o botão *Repetir o mesmo POST com a mesma key* mostra a resposta original voltando com `X-Idempotent-Replayed: true`, sem criar nada |
 | Relacionamentos | Colocar e tirar faixas de uma playlist (N:N), cadastrar um álbum a partir do artista e uma faixa a partir do álbum (1:N), e criar o perfil quando o link `profile` devolve `404` (1:1) |
 | Versões | Nos detalhes de um artista, o botão *Comparar v1 e v2* busca o mesmo artista com `X-API-Version: 1` e `2`, mostra numa tabela o que muda de uma versão para a outra e coloca os dois JSON lado a lado |
-| Status codes | 19 botões que provocam de propósito cada erro da API: `400` (6 casos), `401` (sem chave, chave inexistente e chave revogada), `403` do CORS (header e método não liberados), `404` (recurso e rota), `405`, `406`, `409`, `415`, `422` e `429` |
-| Tráfego | Cada chamada feita, com os headers enviados e recebidos e o status. A chave de API aparece só pelo começo |
+| Status codes | 16 botões que provocam de propósito cada erro da API: `400` (6 casos), `403` do CORS (header e método não liberados), `404` (recurso e rota), `405`, `406`, `409`, `415`, `422` e `429` |
+| Tráfego | Cada chamada feita, com os headers enviados e recebidos e o status |
 
 O front usa a versão padrão em todas as chamadas, menos na comparação. No Swagger UI, o seletor do topo troca a documentação inteira entre a `v1` e a `v2`.
 
@@ -516,43 +470,7 @@ As mesmas regras valem na entrada (DTOs `*Request`) e nas entidades (Bean Valida
 
 ## API Reference
 
-São **43 endpoints**, em 6 grupos. A descrição completa de cada um, com exemplos de resposta de cada status, está no **Swagger UI**. Todas as listagens aceitam `page`, `size` e `sort` ([convenções](#paginação-e-ordenação)). Todo `POST`, `PUT` e `DELETE` (menos `POST /api-keys`) exige o header `X-API-Key` e devolve `401` sem uma chave válida ([chave de API](#chave-de-api-x-api-key)).
-
-<details>
-<summary><b>API Keys</b> — 3 endpoints · geração e gerenciamento das chaves de API</summary>
-
-A chave vai no header `X-API-Key` das rotas que alteram dados. Gerar a chave é aberto.
-
-#### Corpo da requisição (usado no `POST`)
-
-| Campo | Tipo | Descrição |
-| :-- | :-- | :-- |
-| `owner` | `string` | **Obrigatório.** Nome de quem vai usar a chave. De 2 a 100 caracteres, com ao menos uma letra; aceita números e pontuação comum. |
-
-```json
-{
-  "owner": "Vinícius"
-}
-```
-
----
-
-```http
-POST /api-keys
-```
-Gera uma chave. A resposta traz a chave completa no campo `key`, uma única vez. · `201` · `400`
-
-```http
-GET /api-keys/me
-```
-Dados da chave enviada no header `X-API-Key`: dono, prefixo, se está ativa e quando foi gerada. · `200` · `401`
-
-```http
-DELETE /api-keys/me
-```
-Revoga a chave enviada no header `X-API-Key`. · `204` · `401`
-
-</details>
+São **40 endpoints**, em 5 grupos. A descrição completa de cada um, com exemplos de resposta de cada status, está no **Swagger UI**. Todas as listagens aceitam `page`, `size` e `sort` ([convenções](#paginação-e-ordenação)).
 
 <details>
 <summary><b>Artists</b> — 7 endpoints · cadastro de artistas e bandas</summary>
@@ -963,7 +881,6 @@ ORDER BY a.id;
 ```text
 src/main/java/com/vinicius/scene_api
 ├── SceneApiApplication.java
-├── apikey/       chave de API: entidade (só o hash), geração, @RequiresApiKey e o interceptor que devolve 401
 ├── assembler/    monta os links HATEOAS de cada recurso
 ├── config/       carga inicial (DataLoader), OpenAPI/Swagger, versionamento, CORS, JSON estrito e interceptors
 ├── controller/   endpoints REST e a documentação de cada um (@Operation, @ApiResponse)
@@ -980,7 +897,7 @@ src/main/resources
 ├── application.properties
 └── static/       tema do Swagger UI (CSS, fontes e imagens) e a página de termos de uso
 
-src/test/java     testes do token bucket e testes de integração (versionamento, idempotência, chave de API, CORS, rate limiting, erros e documentação)
+src/test/java     testes do token bucket e testes de integração (versionamento, idempotência, CORS, rate limiting, erros e documentação)
 
 postman/          coleção do Postman
 ```

@@ -72,24 +72,6 @@ class OpenApiDocumentationTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("Rotas que alteram dados têm o cadeado (chave de API) e documentam o 401; as consultas não")
-    void apiKeyIsDocumented() {
-        JsonNode scheme = apiDocs().get("components").get("securitySchemes").get("ApiKey");
-        assertEquals("apiKey", scheme.get("type").asString());
-        assertEquals("header", scheme.get("in").asString());
-        assertEquals("X-API-Key", scheme.get("name").asString());
-
-        for (Operation operation : operations()) {
-            boolean protectedRoute = !operation.name().startsWith("GET") && !operation.name().equals("POST /api-keys")
-                    || operation.name().equals("GET /api-keys/me");
-            boolean locked = operation.details().has("security");
-            assertEquals(protectedRoute, locked, operation.name() + (protectedRoute ? " deveria" : " não deveria") + " exigir a chave");
-            assertEquals(protectedRoute, operation.responses().has("401"),
-                    operation.name() + (protectedRoute ? " deveria" : " não deveria") + " documentar 401");
-        }
-    }
-
-    @Test
     @DisplayName("O topo da documentação traz termos de uso, contato, licença e link do repositório")
     void infoHasTermsContactLicenseAndExternalDocs() {
         JsonNode docs = apiDocs();

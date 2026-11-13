@@ -395,16 +395,6 @@ html body { background: transparent !important; color: var(--ink); font-family: 
   content: "Contacting:"; display: block; margin: 0 0 16px; padding: 6px 12px;
   background: #000; color: var(--paper); font: 700 14px/1.2 var(--f-body);
 }
-/* botão Authorize (chave de API): fica ao lado da caixa de servidores, em cima do fundo escuro, então ganha papel e sombra */
-.swagger-ui .scheme-container .auth-wrapper { align-self: flex-start; }
-.swagger-ui .scheme-container .btn.authorize {
-  padding: 12px 22px !important;
-  background: var(--paper) url('/grain.svg') !important; color: var(--ink) !important;
-  border: 3px solid #000 !important; box-shadow: 6px 6px 0 var(--hot) !important;
-}
-.swagger-ui .scheme-container .btn.authorize:hover { background: #000 !important; color: var(--paper) !important; }
-/* o cadeado do Swagger UI vem verde (color do próprio svg); aqui ele segue a cor do texto do botão */
-.swagger-ui .scheme-container .btn.authorize svg { color: inherit !important; }
 .swagger-ui .servers { padding: 0 18px; }
 .swagger-ui .servers > label { margin: 0; font: 700 14px var(--f-cond); text-transform: uppercase; letter-spacing: .08em; }
 .swagger-ui .servers > label select { min-width: 300px; margin-left: 10px; }

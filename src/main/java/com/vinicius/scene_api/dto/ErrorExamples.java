@@ -1,7 +1,5 @@
 package com.vinicius.scene_api.dto;
 
-import com.vinicius.scene_api.apikey.ApiKeyService;
-
 /**
  * Exemplos de corpo de erro usados na documentação do Swagger.
  */
@@ -56,23 +54,6 @@ public final class ErrorExamples {
 
     public static final String BAD_REQUEST_PAGE_TOO_LARGE = """
             {"status": 400, "error": "Bad Request", "message": "Número de página muito grande para o tamanho informado (página x tamanho passa de 2147483647)", "path": "/artists", "timestamp": "2026-10-09T10:15:30", "details": []}""";
-
-    public static final String BAD_REQUEST_API_KEY_OWNER = """
-            {"status": 400, "error": "Bad Request", "message": "Dados inválidos: 1 campo(s) com problema", "path": "/api-keys", "timestamp": "2026-10-09T10:15:30", "details": [{"field": "owner", "message": "tamanho deve ser entre 2 e 100"}]}""";
-
-    public static final String BAD_REQUEST_MALFORMED_API_KEY = """
-            {"status": 400, "error": "Bad Request", "message": "JSON malformado: confira se as aspas, vírgulas e chaves estão no lugar", "path": "/api-keys", "timestamp": "2026-10-09T10:15:30", "details": []}""";
-
-    // ---------- 401 Unauthorized (chave de API) ----------
-
-    public static final String UNAUTHORIZED_MISSING = "{\"status\": 401, \"error\": \"Unauthorized\", \"message\": \""
-            + ApiKeyService.MISSING_MESSAGE + "\", \"path\": \"/artists\", \"timestamp\": \"2026-10-09T10:15:30\", \"details\": []}";
-
-    public static final String UNAUTHORIZED_UNKNOWN = "{\"status\": 401, \"error\": \"Unauthorized\", \"message\": \""
-            + ApiKeyService.UNKNOWN_MESSAGE + "\", \"path\": \"/artists\", \"timestamp\": \"2026-10-09T10:15:30\", \"details\": []}";
-
-    public static final String UNAUTHORIZED_REVOKED = "{\"status\": 401, \"error\": \"Unauthorized\", \"message\": \""
-            + ApiKeyService.REVOKED_MESSAGE + "\", \"path\": \"/artists\", \"timestamp\": \"2026-10-09T10:15:30\", \"details\": []}";
 
     // ---------- 403 Forbidden ----------
 

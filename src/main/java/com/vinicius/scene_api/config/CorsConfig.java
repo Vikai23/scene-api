@@ -1,6 +1,5 @@
 package com.vinicius.scene_api.config;
 
-import com.vinicius.scene_api.apikey.ApiKeyService;
 import com.vinicius.scene_api.idempotency.IdempotencyService;
 import com.vinicius.scene_api.ratelimit.RateLimitInterceptor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -32,8 +31,7 @@ public class CorsConfig {
 
     /** Headers que o cliente de outra origem pode enviar. */
     public static final List<String> ALLOWED_HEADERS = List.of(
-            HttpHeaders.CONTENT_TYPE, HttpHeaders.ACCEPT, ApiVersionConfig.HEADER, IdempotencyService.HEADER,
-            ApiKeyService.HEADER);
+            HttpHeaders.CONTENT_TYPE, HttpHeaders.ACCEPT, ApiVersionConfig.HEADER, IdempotencyService.HEADER);
 
     /** Headers de resposta que o JavaScript do cliente consegue ler (os demais o navegador esconde). */
     public static final List<String> EXPOSED_HEADERS = List.of(

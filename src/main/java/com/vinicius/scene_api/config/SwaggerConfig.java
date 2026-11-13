@@ -1,10 +1,7 @@
 package com.vinicius.scene_api.config;
 
-import com.vinicius.scene_api.apikey.ApiKeyService;
-import com.vinicius.scene_api.apikey.RequiresApiKey;
 import com.vinicius.scene_api.idempotency.IdempotencyProperties;
 import com.vinicius.scene_api.ratelimit.RateLimitProperties;
-import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
@@ -13,11 +10,8 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
-import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springdoc.core.customizers.GlobalOpenApiCustomizer;
-import org.springdoc.core.customizers.GlobalOperationCustomizer;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springdoc.core.properties.SwaggerUiConfigProperties;
 import org.springdoc.core.properties.SwaggerUiOAuthProperties;
@@ -36,7 +30,7 @@ import java.util.stream.Collectors;
 public class SwaggerConfig {
 
     private static final List<String> TAG_ORDER = List.of(
-            "Chaves de API", "Artistas", "Perfis de Artista", "Álbuns", "Faixas", "Playlists");
+            "Artistas", "Perfis de Artista", "Álbuns", "Faixas", "Playlists");
 
     private static final String PAGE_DESCRIPTION =
             "Número da página, começando em 0 (a primeira página é a 0). Padrão: 0. "
@@ -94,20 +88,6 @@ public class SwaggerConfig {
             volta a resposta original, com `X-Idempotent-Replayed: true`. A mesma chave em uma requisição diferente devolve \
             **422 Unprocessable Content**. Sem o header, o POST funciona normalmente.
 
-            ### Autenticação com chave de API (header `X-API-Key`)
-
-            As rotas que alteram dados (`POST`, `PUT` e `DELETE` de artistas, perfis, álbuns, faixas e playlists) exigem uma \
-            chave de API no header `X-API-Key`. As consultas (`GET`) continuam abertas.
-
-            1. Gere uma chave em `POST /api-keys`, informando em `owner` o nome de quem vai usar. A chave completa vem só nessa \
-            resposta: a API guarda apenas o hash dela (SHA-256).
-            2. Clique em **Authorize**, no topo desta página, e cole a chave. A partir daí o *Try it out* envia o header em todas \
-            as rotas protegidas (as que têm o cadeado).
-            3. Para gerenciar a chave, `GET /api-keys/me` mostra os dados dela e `DELETE /api-keys/me` revoga a chave.
-
-            Sem a chave, com uma chave que não existe ou com uma chave revogada, a resposta é **401 Unauthorized**, com o \
-            header `WWW-Authenticate`.
-
             ### Rate limiting (token bucket)
 
             Cada IP tem um bucket com **%d tokens**. Cada chamada a uma rota da API consome um token e o bucket recebe %d tokens a cada %s. \
@@ -134,7 +114,6 @@ public class SwaggerConfig {
             | **201 Created** | Recurso criado (o header `Location` aponta para ele) |
             | **204 No Content** | Recurso removido |
             | **400 Bad Request** | Dados inválidos, JSON malformado ou com valor de tipo errado, id não numérico, enum inexistente, ordenação por um campo que não existe, número de página grande demais para o tamanho, versão da API inexistente ou chave de idempotência fora do formato |
-            | **401 Unauthorized** | Rota protegida (`POST`, `PUT` ou `DELETE`) chamada sem o header `X-API-Key`, com uma chave que não existe ou com uma chave revogada |
             | **403 Forbidden** | Requisição de uma origem não permitida pelo CORS |
             | **404 Not Found** | Recurso ou rota inexistente |
             | **405 Method Not Allowed** | Método HTTP não aceito na rota |
@@ -166,18 +145,10 @@ public class SwaggerConfig {
                         .license(new License()
                                 .name("Apache 2.0")
                                 .url("https://www.apache.org/licenses/LICENSE-2.0")))
-                .components(new Components().addSecuritySchemes(ApiKeyService.SECURITY_SCHEME, new SecurityScheme()
-                        .type(SecurityScheme.Type.APIKEY)
-                        .in(SecurityScheme.In.HEADER)
-                        .name(ApiKeyService.HEADER)
-                        .description("Chave de API gerada em POST /api-keys. Exigida nas rotas que alteram dados "
-                                + "(POST, PUT e DELETE) e nas de gerenciar a própria chave.")))
                 .externalDocs(new ExternalDocumentation()
                         .description("github.com/Vikai23/scene-api, com o README e a coleção do Postman")
                         .url("https://github.com/Vikai23/scene-api"))
                 .tags(List.of(
-                        new Tag().name("Chaves de API").description(
-                                "Geração e gerenciamento das chaves de API. As rotas que alteram dados (POST, PUT e DELETE) exigem uma chave válida no header X-API-Key; as consultas (GET) são abertas."),
                         new Tag().name("Artistas").description(
                                 "Cadastro de artistas e bandas. Um artista tem vários álbuns (relação 1:N) e no máximo um perfil (relação 1:1)."),
                         new Tag().name("Perfis de Artista").description(
@@ -212,20 +183,6 @@ public class SwaggerConfig {
                 .pathsToMatch("/**")
                 .addOpenApiCustomizer(new ApiVersionDocsCustomizer(version))
                 .build();
-    }
-
-    /**
-     * Toda rota marcada com @RequiresApiKey ganha o cadeado no Swagger UI: com a chave colada em Authorize, o Try it out
-     * dessas rotas já envia o header X-API-Key. O 401 delas é documentado no OpenApiPartTwoCustomizer.
-     */
-    @Bean
-    public GlobalOperationCustomizer apiKeySecurityCustomizer() {
-        return (operation, handlerMethod) -> {
-            if (handlerMethod.hasMethodAnnotation(RequiresApiKey.class)) {
-                operation.addSecurityItem(new SecurityRequirement().addList(ApiKeyService.SECURITY_SCHEME));
-            }
-            return operation;
-        };
     }
 
     /**

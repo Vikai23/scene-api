@@ -11,8 +11,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -30,10 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 abstract class IntegrationTestSupport {
 
     private static final AtomicInteger SEQUENCE = new AtomicInteger();
-
-    protected static final String API_KEY_HEADER = "X-API-Key";
-
-    private String apiKey;
 
     private final HttpClient client = HttpClient.newHttpClient();
 
@@ -55,15 +49,8 @@ abstract class IntegrationTestSupport {
     /**
      * Envia uma requisição. Os headers vêm em pares: nome, valor, nome, valor...
      * Quando há corpo, o Content-Type é application/json, a não ser que o teste informe outro.
-     * As rotas que alteram dados exigem uma chave de API: se o teste não mandar o header X-API-Key, vai a chave
-     * gerada para os testes (ver {@link #apiKey()}). Para testar o 401, use {@link #sendRaw}.
      */
     protected HttpResponse<String> send(String method, String path, String json, String... headers) {
-        return sendRaw(method, path, json, withApiKey(method, path, headers));
-    }
-
-    /** Envia a requisição exatamente com os headers informados, sem acrescentar a chave de API. */
-    protected HttpResponse<String> sendRaw(String method, String path, String json, String... headers) {
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path));
         if (json == null) {
             request.method(method, HttpRequest.BodyPublishers.noBody());
@@ -82,32 +69,6 @@ abstract class IntegrationTestSupport {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Chamada interrompida: " + method + " " + path, ex);
         }
-    }
-
-    /** Chave de API dos testes, gerada em POST /api-keys na primeira vez que alguma escrita precisa dela. */
-    protected String apiKey() {
-        if (apiKey == null) {
-            HttpResponse<String> created = sendRaw("POST", "/api-keys", "{\"owner\": \"Testes de integração\"}");
-            apiKey = json(created).get("key").asString();
-        }
-        return apiKey;
-    }
-
-    private String[] withApiKey(String method, String path, String[] headers) {
-        boolean write = List.of("POST", "PUT", "DELETE", "PATCH").contains(method);
-        boolean keyCreation = method.equals("POST") && path.startsWith("/api-keys") && !path.startsWith("/api-keys/");
-        for (int i = 0; i < headers.length; i += 2) {
-            if (API_KEY_HEADER.equalsIgnoreCase(headers[i])) {
-                return headers; // o teste já escolheu a chave
-            }
-        }
-        if (!write || keyCreation) {
-            return headers;
-        }
-        String[] withKey = Arrays.copyOf(headers, headers.length + 2);
-        withKey[headers.length] = API_KEY_HEADER;
-        withKey[headers.length + 1] = apiKey();
-        return withKey;
     }
 
     /** Corpo da resposta já convertido de JSON, para o teste ler os campos. */
